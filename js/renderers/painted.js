@@ -59,7 +59,7 @@ const PaintedRenderer = (() => {
       g.translate(cx, wy); g.scale(sd * -1, 1);      // a imagem é a asa esquerda
       g.rotate(folded ? 0.55 : -0.08 + 0.16 * flap);
       g.scale(persp * (folded ? 0.55 : 0.78 + 0.22 * Math.cos(ph)), folded ? 0.8 : 1);
-      g.globalAlpha = 0.88;
+      g.globalAlpha = 0.88; g.imageSmoothingQuality = 'high';
       g.drawImage(wingImg, -A.rootX * k, -A.rootY * k, A.w * k, A.h * k);
       g.restore();
     });
@@ -72,7 +72,7 @@ const PaintedRenderer = (() => {
     const ax = (ANCHOR_X[name] != null ? ANCHOR_X[name] * m.w : m.footX) * u;
     const mirror = name.endsWith('lado') && (pose.facing || 0) < 0;
     const breathe = 1 + Math.sin(t * 0.0025) * 0.006;
-    g.save(); g.globalAlpha = alpha;
+    g.save(); g.globalAlpha = alpha; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     g.translate(cx, F); if (mirror) g.scale(-1, 1); g.scale(1, breathe);
     g.drawImage(im, -ax, -h, w, h);
     g.restore();

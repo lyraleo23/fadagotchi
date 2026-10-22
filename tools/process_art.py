@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageChops, ImageStat
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'assets' / 'fada'
-ALTURA = 520                     # altura da fada adulta em pé no arquivo final (px)
+ALTURA = 840                     # altura da fada adulta em pé no arquivo final (px) — nítida até a escala 12
 UNIDADES = 56                    # ... e no mundo do jogo (192x120)
 # cada fase: arquivos, altura em pé no jogo e correção de escala por pose
 # (a IA às vezes encolhe a figura para caber os braços, ou aproxima a câmera)
@@ -89,7 +89,7 @@ def asas():
     x0, y0, x1, y1 = half.getchannel('A').getbbox()
     root = (im.width // 2 - x0, 518 - y0)            # ponto onde as asas se encontram
     half = half.crop((x0, y0, im.width // 2, y1))
-    k = 300 / half.width
+    k = 420 / half.width
     half = half.resize((round(half.width * k), round(half.height * k)), Image.LANCZOS)
     half.save(OUT / 'asa.webp', 'WEBP', quality=86, method=6)
     print(f'asa           {half.width}x{half.height}  {(OUT / "asa.webp").stat().st_size // 1024} KB')

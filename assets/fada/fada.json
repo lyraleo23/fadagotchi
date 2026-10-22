@@ -1,167 +1,167 @@
 {
- "unitsPerPx": 0.1076923076923077,
+ "unitsPerPx": 0.06666666666666667,
  "poses": {
   "referencia": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "acenando": {
-   "w": 178,
-   "h": 523,
-   "footX": 89.0,
-   "footY": 523
+   "w": 284,
+   "h": 841,
+   "footX": 142.0,
+   "footY": 841
   },
   "espreguicando": {
-   "w": 164,
-   "h": 567,
-   "footX": 82.0,
-   "footY": 567
+   "w": 261,
+   "h": 913,
+   "footX": 130.5,
+   "footY": 913
   },
   "fome": {
-   "w": 173,
-   "h": 523,
-   "footX": 86.5,
-   "footY": 523
+   "w": 276,
+   "h": 842,
+   "footX": 138.0,
+   "footY": 842
   },
   "bocejo": {
-   "w": 174,
-   "h": 524,
-   "footX": 87.0,
-   "footY": 524
+   "w": 279,
+   "h": 843,
+   "footX": 139.5,
+   "footY": 843
   },
   "cochilo": {
-   "w": 177,
-   "h": 517,
-   "footX": 88.5,
-   "footY": 517
+   "w": 284,
+   "h": 831,
+   "footX": 142.0,
+   "footY": 831
   },
   "tedio": {
-   "w": 253,
-   "h": 385,
-   "footX": 126.5,
-   "footY": 385
+   "w": 406,
+   "h": 619,
+   "footX": 203.0,
+   "footY": 619
   },
   "lado": {
-   "w": 295,
-   "h": 515,
-   "footX": 147.5,
-   "footY": 515
+   "w": 474,
+   "h": 827,
+   "footX": 237.0,
+   "footY": 827
   },
   "referencia_feliz": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "referencia_triste": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "referencia_dormindo": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "referencia_cansada": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "referencia_entediada": {
-   "w": 184,
-   "h": 525,
-   "footX": 92.0,
-   "footY": 525
+   "w": 294,
+   "h": 845,
+   "footX": 147.0,
+   "footY": 845
   },
   "bebe_referencia": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   },
   "bebe_acenando": {
-   "w": 176,
-   "h": 356,
-   "footX": 88.0,
-   "footY": 356
+   "w": 281,
+   "h": 573,
+   "footX": 140.5,
+   "footY": 573
   },
   "bebe_espreguicando": {
-   "w": 179,
-   "h": 349,
-   "footX": 89.5,
-   "footY": 349
+   "w": 285,
+   "h": 561,
+   "footX": 142.5,
+   "footY": 561
   },
   "bebe_fome": {
-   "w": 174,
-   "h": 350,
-   "footX": 87.0,
-   "footY": 350
+   "w": 279,
+   "h": 562,
+   "footX": 139.5,
+   "footY": 562
   },
   "bebe_bocejo": {
-   "w": 174,
-   "h": 350,
-   "footX": 87.0,
-   "footY": 350
+   "w": 279,
+   "h": 563,
+   "footX": 139.5,
+   "footY": 563
   },
   "bebe_cochilo": {
-   "w": 174,
-   "h": 351,
-   "footX": 87.0,
-   "footY": 351
+   "w": 279,
+   "h": 563,
+   "footX": 139.5,
+   "footY": 563
   },
   "bebe_tedio": {
-   "w": 167,
-   "h": 215,
-   "footX": 83.5,
-   "footY": 215
+   "w": 265,
+   "h": 344,
+   "footX": 132.5,
+   "footY": 344
   },
   "bebe_lado": {
-   "w": 226,
-   "h": 338,
-   "footX": 113.0,
-   "footY": 338
+   "w": 362,
+   "h": 542,
+   "footX": 181.0,
+   "footY": 542
   },
   "bebe_referencia_feliz": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   },
   "bebe_referencia_triste": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   },
   "bebe_referencia_dormindo": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   },
   "bebe_referencia_cansada": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   },
   "bebe_referencia_entediada": {
-   "w": 167,
-   "h": 356,
-   "footX": 83.5,
-   "footY": 356
+   "w": 268,
+   "h": 575,
+   "footX": 134.0,
+   "footY": 575
   }
  },
  "asa": {
-  "w": 300,
-  "h": 368,
-  "rootX": 300.0,
-  "rootY": 183.8
+  "w": 420,
+  "h": 515,
+  "rootX": 420.0,
+  "rootY": 257.3
  }
 }

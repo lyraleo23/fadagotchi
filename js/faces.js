@@ -2,7 +2,7 @@
    tamanho em que a tela aparece e a densidade do aparelho (entre 3 e 8). */
 function renderScale(canvas) {
   const w = (canvas && canvas.clientWidth) || 380, dpr = window.devicePixelRatio || 1;
-  return Math.max(3, Math.min(8, Math.ceil(w * dpr / 192)));
+  return Math.max(3, Math.min(12, Math.ceil(w * dpr / 192)));
 }
 
 /* expressão do momento (compartilhada pelos renderers) */

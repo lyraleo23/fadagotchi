@@ -359,10 +359,16 @@ function restart() {
 }
 function setSkin() {
   R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : s.skin === 'smooth' ? SmoothRenderer : s.skin === 'painted' ? PaintedRenderer : IllustratedRenderer;
-  R.init($('lcd'));
+  R.init($('lcd')); skinScale = renderScale($('lcd'));
   $('lcd').style.imageRendering = R === SmoothRenderer || R === IllustratedRenderer || R === PaintedRenderer ? 'auto' : 'pixelated';
   $('screen').style.background = s.skin === 'lcd' ? '#a9b897' : '#1d2350';
 }
+// tela mudou de tamanho (girou o celular, redimensionou a janela): refaz na resolução nova
+let skinScale = 0, resizeT = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { const k = renderScale($('lcd')); if (k !== skinScale) { skinScale = k; setSkin(); } }, 250);
+});
 
 /* loop */
 let lastTick = performance.now();
