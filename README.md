@@ -14,6 +14,9 @@ Abra `index.html` no navegador. Não precisa de build nem dependências.
 
 ## Ciclo de vida
 
+Cada botão de flor já vem com uma aparência sorteada (a cor do botão é a do cabelo). Dá pra trocar tudo em **Aparência**, na ficha.
+
+
 Botão de flor → abre em 30 s → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h.
 
 ## Arquitetura (`index.html`)
@@ -25,11 +28,12 @@ Core (simulação) ──> Behavior (gestos) ──> Pose ──> Renderer (dese
 ```
 
 1. **Sprites**: pixel art monocromática (LCD).
-2. **Core**: estado e regras da simulação (`Core.stepMinute`, `needs`, `mood`). Não sabe nada de tela.
-3. **World**: mapa do cenário em coordenadas normalizadas (x 0..1, y 0..1): casinha, flores, borboletas, vaga-lumes e a área livre de voo. O Behavior usa o mapa pra saber aonde ir; os renderers desenham tudo nos mesmos lugares.
-4. **Behavior**: decide o que a fada está fazendo agora (passear, acenar, pirueta, bocejo, cochilo, fome, tédio, ir dormir na casinha, espreguiçar, cheirar flores, perseguir borboletas, brincar com vaga-lumes) e entrega uma **Pose** a cada frame.
-5. **Renderers**: `LcdRenderer` (48×32) e `ColorRenderer` (192×120, desenho procedural com sombreamento). Só desenham Poses.
-6. **UI**: botões, ficha da fada, persistência.
+2. **Looks**: aparência da fada em 5 partes (cabelo, pele, olhos, vestido, asas). Cada opção tem um **nome** (o contrato) e uma paleta padrão; um renderer novo pode usar só os nomes e trazer a própria arte. Fica salva em `state.look`.
+3. **Core**: estado e regras da simulação (`Core.stepMinute`, `needs`, `mood`). Não sabe nada de tela.
+4. **World**: mapa do cenário em coordenadas normalizadas (x 0..1, y 0..1): casinha, flores, borboletas, vaga-lumes e a área livre de voo. O Behavior usa o mapa pra saber aonde ir; os renderers desenham tudo nos mesmos lugares.
+5. **Behavior**: decide o que a fada está fazendo agora (passear, acenar, pirueta, bocejo, cochilo, fome, tédio, ir dormir na casinha, espreguiçar, cheirar flores, perseguir borboletas, brincar com vaga-lumes) e entrega uma **Pose** a cada frame.
+6. **Renderers**: `LcdRenderer` (48×32) e `ColorRenderer` (192×120, desenho procedural com sombreamento). Só desenham Poses.
+7. **UI**: botões, ficha da fada, persistência.
 
 ### Contrato do renderer
 
@@ -69,7 +73,7 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v0.3: visual HD (192×120), sombreamento, cenário animado, nascimento em 30 s
 - [x] v0.4: camada Behavior + Pose, gestos (aceno, pirueta, bocejo, cochilo, fome, tédio, adormecer, espreguiçar), fada vira de lado, toque na fada
 - [x] v0.5: World (mapa do cenário); dorme dentro da casinha (janela acesa/apagada), cheira flores, persegue borboletas, brinca com vaga-lumes
-- [ ] Personalização da fada ao nascer
+- [x] v0.6: aparência sorteada ao nascer (8 cabelos, 5 tons de pele, 5 olhos, 6 vestidos, 5 asas) e editável na ficha
 - [ ] Gráficos realistas
 
 ## Publicação
