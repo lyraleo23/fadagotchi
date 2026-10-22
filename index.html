@@ -275,11 +275,12 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 
 <script>
 /* =====================================================================
-   FADAGOTCHI — v0.4
+   FADAGOTCHI — v0.5
    Arquitetura:
      1. Sprites   — pixel art (LCD monocromático + itens coloridos)
      2. Core      — estado + regras da simulação (não sabe nada de tela)
-     2b. Behavior — decide o gesto/pose do momento e entrega uma Pose
+     2b. World    — mapa do cenário (casinha, flores, borboletas, vaga-lumes)
+     2c. Behavior — decide o gesto/pose do momento e entrega uma Pose
      3. Renderers — LcdRenderer (48×32, clássico) e ColorRenderer
                     (192×120, colorido HD, fada desenhada proceduralmente).
                     Interface comum: init(canvas), draw(state, ui, now).
@@ -365,6 +366,17 @@ const SPR = {
     y: 15,
   },
 };
+const lcdHouse = S([
+  "....##....",
+  "...#..#...",
+  "..#.#..#..",
+  ".#......#.",
+  "##########",
+  ".#......#.",
+  ".#.##...#.",
+  ".#.##.#.#.",
+  ".#.##...#.",
+  ".########."]);
 const bud = S([
   "....####....",
   "...#....#...",
@@ -520,93 +532,195 @@ const Core = {
   },
 };
 
-/* ---------- 2b. BEHAVIOR (gera a Pose de cada frame) ----------
+/* ---------- 2b. WORLD (mapa do cenário, em coordenadas normalizadas) ----------
+   x: 0 = borda esquerda · 1 = borda direita.  y: 0 = topo · 1 = base da tela.
+   O Behavior usa o mapa para saber aonde ir; os renderers desenham tudo
+   nesses mesmos lugares. Um visual novo só precisa respeitar o mapa.     */
+const World = {
+  house: { x: 0.115, door: 0.105 },
+  flowers: [46, 57, 71, 88, 103, 121, 137, 153, 176, 188].map(x => x / 192),
+  walk(s) { return { min: 0.28, max: 0.88 - s.poops * 0.083 }; },
+  butterfly(i, t) {
+    return { x: (112 + 58 * Math.sin(t * 0.00035 + i * 2.4)) / 192, y: (46 + 14 * Math.sin(t * 0.0009 + i * 1.3) + 3 * Math.sin(t * 0.004 + i)) / 120 };
+  },
+  firefly(i, t) {
+    const x = ((i * 29 + 30 + 18 * Math.sin(t * 0.0005 + i)) % 192 + 192) % 192;
+    return { x: x / 192, y: (64 + 13 * Math.sin(t * 0.0007 + i * 2.1) + (i % 3) * 6) / 120, pulse: (Math.sin(t * 0.004 + i * 1.9) + 1) / 2 };
+  },
+  phase(h) { return (h >= 21 || h < 5.5) ? 'night' : h >= 18 ? 'dusk' : h < 8 ? 'dawn' : 'day'; },
+};
+
+/* ---------- 2c. BEHAVIOR (gera a Pose de cada frame) ----------
    Fica entre o Core e os renderers. O Core diz COMO ela está (fome, sono...),
-   o Behavior decide O QUE ela está fazendo agora (andar, acenar, bocejar...)
-   e entrega uma Pose. Qualquer renderer — LCD, pixel art, sprites ou um
-   futuro visual realista — só precisa saber desenhar uma Pose.
+   o Behavior decide O QUE ela está fazendo agora (passear, acenar, ir dormir
+   na casinha...) e entrega uma Pose. Qualquer renderer — LCD, pixel art,
+   sprites ou um futuro visual realista — só precisa saber desenhar uma Pose.
 
    Pose = {
-     x: 0..1          posição horizontal no "palco"
+     x: 0..1          posição no palco (mesmas coordenadas do World)
      facing: -1..1    -1 olhando p/ esquerda · 0 de frente · 1 p/ direita
      lift: px         quanto sobe (+) ou desce (−) em relação à altura normal
      sleepP: 0..1     0 acordada · 1 dormindo (transição suave)
+     hidden: bool     está dentro da casinha
+     door: 0..1       porta da casinha aberta
      wing: rad        fase da batida de asas
      face: string|null  happy · neutral · sad · sleep · yawn · tired · bored
      armL: down · wave · up · belly · mouth      (braço livre)
      armR: wand · up                              (braço da varinha)
+     focus: {kind, x, i}  o que ela está olhando (flor, borboleta, vaga-lumes)
      nod, kick, shake, trail: detalhes (cabeceada, chutinho, tremida, rastro)
      action, p: gesto atual e progresso 0..1
    }
 */
 const Behavior = (() => {
-  const b = { x: 0.5, target: 0.5, nextWander: 0, facing: 0, act: null, nextIdle: 0, wasAsleep: null, sleepP: 0, wing: 0 };
-  const DUR = { wave: 2200, spin: 1500, yawn: 2400, doze: 4200, hungry: 2600, bored: 5200, fallAsleep: 2800, stretch: 2400, giggle: 1400 };
-  const LOOPING = ['fallAsleep', 'stretch'];
+  const b = { x: 0.5, target: 0.5, nextWander: 0, facing: 0, act: null, nextIdle: 0, wasAsleep: null, sleepP: 0, wing: 0, routine: null };
+  const DUR = { wave: 2200, spin: 1500, yawn: 2400, doze: 4200, hungry: 2600, bored: 5200, stretch: 2400, giggle: 1400, sniff: 3200, chase: 6000, fireflies: 6500 };
+  const KEEP = ['stretch'];
+  const SPEED = 0.00022, RUSH = 0.0004;
 
-  function play(type, now = performance.now()) { b.act = { type, t0: now, dur: DUR[type] }; }
-  function reset(s) { Object.assign(b, { x: 0.5, target: 0.5, facing: 0, act: null, nextIdle: 0, wasAsleep: s ? s.asleep : null, sleepP: s && s.asleep ? 1 : 0 }); }
+  function play(type, now = performance.now(), extra = {}) { b.act = Object.assign({ type, t0: now, dur: DUR[type] }, extra); }
+  function reset(s) {
+    Object.assign(b, { x: 0.5, target: 0.5, facing: 0, act: null, nextIdle: 0, wasAsleep: s ? s.asleep : null, sleepP: s && s.asleep ? 1 : 0, routine: null });
+    if (s && s.asleep && s.stage !== 'bud') { b.routine = { type: 'home', phase: 'inside', t0: 0 }; b.x = World.house.door; }
+  }
 
-  function pickIdle(s) {
-    const r = Math.random(), h = Core.hour(s);
+  function pickIdle(s, now) {
+    const r = Math.random(), h = Core.hour(s), ph = World.phase(h);
     if (s.energy < 25) return r < .7 ? 'doze' : 'yawn';
     if (s.hunger < 25) return 'hungry';
     if (s.fun < 25) return 'bored';
-    if (s.energy < 45 || h >= 20.5) return r < .5 ? 'yawn' : null;
+    if (s.energy < 45 || h >= 20.5) return r < .4 ? 'yawn' : (ph === 'dusk' && r < .7 ? 'fireflies' : null);
     const m = Core.mood(s);
-    if (m === 'happy') return r < .35 ? 'wave' : r < .65 ? 'spin' : null;
-    return r < .3 ? 'wave' : null;
+    const outdoors = ph === 'dusk' ? 'fireflies' : (ph === 'day' || ph === 'dawn') ? 'chase' : null;
+    if (m === 'happy') return r < .2 ? 'wave' : r < .4 ? 'spin' : r < .65 ? 'visit' : r < .9 ? outdoors : null;
+    return r < .25 ? 'wave' : r < .55 ? 'visit' : null;
+  }
+
+  // anda até tx; devolve true quando chegou
+  function travel(tx, dt, speed) {
+    const d = tx - b.x;
+    b.x += Math.sign(d) * Math.min(Math.abs(d), dt * speed);
+    return Math.abs(tx - b.x) < 0.004;
   }
 
   function update(s, ui, now, dt) {
-    if (b.wasAsleep === null) { b.wasAsleep = s.asleep; b.sleepP = s.asleep ? 1 : 0; }
-    if (s.asleep !== b.wasAsleep) { b.wasAsleep = s.asleep; if (s.stage !== 'bud' && !s.gone) play(s.asleep ? 'fallAsleep' : 'stretch', now); }
+    if (b.wasAsleep === null) reset(s);
+    // começou a dormir: vai para a casinha · acordou: sai pela porta
+    if (s.asleep !== b.wasAsleep) {
+      b.wasAsleep = s.asleep;
+      if (s.stage !== 'bud' && !s.gone) {
+        b.act = null;
+        if (s.asleep) b.routine = { type: 'home', phase: 'travel', t0: now };
+        else b.routine = { type: 'home', phase: 'exit', t0: now };
+      }
+    }
+    if (s.stage === 'bud' || s.gone) b.routine = null;
 
     let act = b.act && now - b.act.t0 < b.act.dur ? b.act : (b.act = null);
     const busy = !!(ui.anim && now - ui.anim.t0 < ui.anim.dur);
-    if (busy && act && !LOOPING.includes(act.type)) act = b.act = null;
+    if (busy && act && !KEEP.includes(act.type)) act = b.act = null;
+    if (busy && b.routine && b.routine.type === 'visit') b.routine = null;
     const free = ui.view === 'main' && !s.gone && s.stage !== 'bud';
-
-    // transição de sono
-    if (act && act.type === 'fallAsleep') b.sleepP = Math.min(1, Math.max(0, ((now - act.t0) / act.dur - 0.4) / 0.6));
-    else if (act && act.type === 'stretch') b.sleepP = Math.max(0, 1 - (now - act.t0) / (act.dur * 0.35));
-    else b.sleepP = s.asleep ? 1 : 0;
-
-    // gestos espontâneos
-    if (free && !s.asleep && !act && !busy) {
-      if (!b.nextIdle) b.nextIdle = now + 4000;
-      if (now > b.nextIdle) { const k = pickIdle(s); if (k) { play(k, now); act = b.act; } b.nextIdle = now + 5000 + Math.random() * 5000; }
-    }
-
-    // passeio
     const prevX = b.x;
-    if (free && !s.asleep && !busy && !act) {
-      if (now > b.nextWander) { b.target = Math.random(); b.nextWander = now + 1800 + Math.random() * 2800; }
-      const d = b.target - b.x;
-      b.x += Math.sign(d) * Math.min(Math.abs(d), dt * 0.00022);
-    }
-    const vx = (b.x - prevX) / Math.max(1, dt);
-    let tf = Math.abs(vx) > 0.00005 ? Math.sign(vx) * 0.9 : 0;
-    if (act && act.type === 'hungry') tf = -0.7; // olha para a casinha
-    b.facing += (tf - b.facing) * Math.min(1, dt * 0.005);
+    const pose = { x: 0, facing: 0, lift: 0, sleepP: 0, hidden: false, door: 0, face: null, armL: 'down', armR: 'wand', nod: 0, kick: false, shake: 0, trail: false, focus: null, action: null, p: 0 };
+    let rate = 1, tf = null;
 
+    // ---- rotinas (deslocamentos com objetivo) ----
+    const R = b.routine;
+    if (R && R.type === 'home') {
+      const door = World.house.door + 0.03;
+      if (R.phase === 'travel') {
+        pose.face = 'tired'; rate = 0.8;
+        if (travel(door, dt, RUSH)) { R.phase = 'enter'; R.t0 = now; }
+        b.sleepP = 0;
+      } else if (R.phase === 'enter') {
+        const p = Math.min(1, (now - R.t0) / 1400);
+        pose.face = p < 0.5 ? 'yawn' : 'sleep'; pose.armL = p < 0.5 ? 'mouth' : 'down';
+        pose.door = 1; tf = -0.9; rate = 1 - p;
+        pose.lift = -8 * p; b.x += (World.house.door - b.x) * Math.min(1, dt * 0.004);
+        b.sleepP = p;
+        if (p >= 1) { R.phase = 'inside'; R.t0 = now; }
+      } else if (R.phase === 'inside') {
+        pose.hidden = true; b.sleepP = 1; b.x = World.house.door;
+      } else if (R.phase === 'exit') {
+        const p = Math.min(1, (now - R.t0) / 900);
+        pose.door = 1; pose.face = 'sleep'; pose.lift = -8 * (1 - p); b.sleepP = 1 - p; tf = 0.9;
+        b.x += (door - b.x) * Math.min(1, dt * 0.004);
+        if (p >= 1) { b.routine = null; play('stretch', now); act = b.act; }
+      }
+    } else if (R && R.type === 'visit') {
+      tf = Math.sign(R.tx - b.x) * 0.9;
+      if (travel(R.tx, dt, SPEED * 1.3)) { b.routine = null; play('sniff', now, { flower: R.flower, side: R.side }); act = b.act; }
+    }
+    if (!b.routine || b.routine.type !== 'home') {
+      if (!(act && act.type === 'stretch')) b.sleepP = s.asleep ? 1 : 0;
+      else b.sleepP = Math.max(0, 1 - (now - act.t0) / (act.dur * 0.35));
+    }
+
+    // ---- gestos espontâneos ----
+    if (free && !s.asleep && !act && !busy && !b.routine) {
+      if (!b.nextIdle) b.nextIdle = now + 4000;
+      if (now > b.nextIdle) {
+        const k = pickIdle(s, now);
+        if (k === 'visit') {
+          const w = World.walk(s);
+          const opts = World.flowers.map((x, i) => ({ x, i })).filter(f => f.x > w.min - 0.06 && f.x < w.max + 0.04);
+          if (opts.length) {
+            const f = opts[Math.floor(Math.random() * opts.length)], side = f.x > b.x ? -1 : 1;
+            b.routine = { type: 'visit', tx: f.x + side * 0.07, flower: f.i, side };
+          }
+        } else if (k) { play(k, now, k === 'chase' ? { bf: Math.random() < .5 ? 0 : 1 } : {}); act = b.act; }
+        b.nextIdle = now + 5000 + Math.random() * 5000;
+      }
+    }
+
+    // ---- passeio livre ----
+    if (free && !s.asleep && !busy && !act && !b.routine) {
+      const w = World.walk(s);
+      if (now > b.nextWander || b.target > w.max) { b.target = w.min + Math.random() * Math.max(0, w.max - w.min); b.nextWander = now + 1800 + Math.random() * 2800; }
+      travel(b.target, dt, SPEED);
+    }
+
+    // ---- gestos ----
     const p = act ? (now - act.t0) / act.dur : 0;
-    const pose = { x: b.x, facing: b.facing, lift: 0, sleepP: b.sleepP, face: null, armL: 'down', armR: 'wand', nod: 0, kick: false, shake: 0, trail: false, action: act ? act.type : null, p };
-    let rate = 1;
     if (act) switch (act.type) {
       case 'wave': pose.face = 'happy'; pose.armL = 'wave'; break;
       case 'giggle': pose.face = 'happy'; pose.lift = Math.abs(Math.sin(p * Math.PI * 3)) * 3; rate = 1.6; break;
-      case 'spin': pose.face = 'happy'; pose.facing = Math.sin(p * Math.PI * 4); pose.lift = Math.sin(p * Math.PI) * 7; rate = 2.2; pose.trail = true; break;
+      case 'spin': pose.face = 'happy'; pose.lift = Math.sin(p * Math.PI) * 7; rate = 2.2; pose.trail = true; break;
       case 'yawn': { const mid = p > 0.2 && p < 0.8; pose.face = mid ? 'yawn' : 'tired'; pose.armL = mid ? 'mouth' : 'down'; rate = .6; break; }
       case 'doze': { const k = Math.floor(p * 6) % 2; pose.face = k ? 'sleep' : 'tired'; pose.nod = k; pose.lift = -3 * Math.sin(p * Math.PI); rate = .4; break; }
-      case 'hungry': pose.face = 'sad'; pose.armL = 'belly'; pose.shake = p > 0.3 && p < 0.6 && Math.floor(now / 80) % 2 ? 1 : 0; break;
+      case 'hungry': pose.face = 'sad'; pose.armL = 'belly'; tf = -0.7; pose.shake = p > 0.3 && p < 0.6 && Math.floor(now / 80) % 2 ? 1 : 0; break;
       case 'bored': pose.face = 'bored'; pose.lift = -6 * Math.min(1, p * 4) * (p < 0.85 ? 1 : (1 - p) / 0.15); pose.kick = true; rate = .5; break;
-      case 'fallAsleep': pose.face = p < 0.4 ? 'yawn' : p < 0.7 ? 'tired' : 'sleep'; pose.armL = p < 0.4 ? 'mouth' : 'down'; rate = Math.max(0, 1 - p); break;
       case 'stretch': pose.face = p < 0.45 ? 'sleep' : 'happy'; pose.armL = 'up'; pose.armR = 'up'; pose.lift = Math.sin(p * Math.PI) * 3; break;
+      case 'sniff': {
+        const down = Math.min(1, p * 4) * (p < 0.85 ? 1 : (1 - p) / 0.15);
+        pose.face = p > 0.25 && p < 0.55 ? 'sleep' : 'happy'; pose.lift = -9 * down; pose.nod = down > 0.5 ? 1 : 0;
+        tf = -act.side * 0.8; rate = 0.6; pose.focus = { kind: 'flower', i: act.flower, x: World.flowers[act.flower] };
+        break;
+      }
+      case 'chase': {
+        const bf = World.butterfly(act.bf, now), w = World.walk(s);
+        const tx = Math.max(w.min, Math.min(w.max, bf.x - 0.03));
+        tf = Math.sign(bf.x - b.x) * 0.9;
+        b.x += (tx - b.x) * Math.min(1, dt * 0.0025);
+        const ramp = Math.min(1, p * 5) * Math.min(1, (1 - p) * 5);
+        pose.lift = Math.max(0, Math.min(30, 70 - bf.y * 120)) * ramp;
+        pose.face = 'happy'; pose.armL = p > 0.3 && p < 0.8 ? 'wave' : 'down'; rate = 1.6;
+        pose.focus = { kind: 'butterfly', i: act.bf };
+        break;
+      }
+      case 'fireflies': pose.face = 'happy'; pose.lift = Math.sin(p * Math.PI) * 6; rate = 0.9; pose.armL = p > 0.4 && p < 0.7 ? 'up' : 'down'; pose.focus = { kind: 'fireflies', p }; break;
     }
+
+    // ---- direção do olhar ----
+    const vx = (b.x - prevX) / Math.max(1, dt);
+    if (tf === null) tf = Math.abs(vx) > 0.00005 ? Math.sign(vx) * 0.9 : 0;
+    b.facing += (tf - b.facing) * Math.min(1, dt * 0.005);
+    pose.facing = act && act.type === 'spin' ? Math.sin(p * Math.PI * 4) : b.facing;
+
     if (s.asleep && b.sleepP >= 1) rate = 0;
     b.wing += dt * 0.014 * rate;
-    pose.wing = b.wing;
+    Object.assign(pose, { x: b.x, sleepP: b.sleepP, wing: b.wing, action: act ? act.type : (b.routine ? b.routine.type + ':' + (b.routine.phase || 'go') : null), p });
     return pose;
   }
   return { update, play, reset, state: b };
@@ -658,13 +772,13 @@ const LcdRenderer = (() => {
     }
   }
   const spriteW = s => SPR[s.stage].base[0].length;
-  function drawPixie(s, x, tick, face) {
+  function drawPixie(s, x, tick, face, dy = 0) {
     const def = SPR[s.stage];
     const flying = !s.asleep;
     const up = flying ? (tick % 2 === 0) : false;
     const bob = flying ? ((tick >> 1) % 2) : 1;
     const sp = pixieSprite(s.stage, face, up);
-    const y = def.y + bob;
+    const y = Math.max(0, def.y + bob + dy);
     blit(sp, x, y);
     return { x, y, w: sp.w, h: sp.h };
   }
@@ -727,12 +841,17 @@ const LcdRenderer = (() => {
       if (tick % 2 === i % 2) { px(x + 2, 21); px(x + 5, 20); } else { px(x + 3, 20); px(x + 6, 21); }
     }
 
+    blit(lcdHouse, 0, 22);
+    if (pose.hidden) {
+      if (tick % 4 < 2) blit(ITEM.z, 11, 14); else blit(ITEM.z, 14, 10);
+      return flush(dark);
+    }
     const w = spriteW(s);
-    const maxX = Math.max(1, 47 - w - 9 * s.poops);
-    let x = 1 + Math.round(pose.x * (maxX - 1));
+    const maxX = Math.max(11, 47 - w - 9 * s.poops);
+    let x = Math.max(Math.min(maxX, Math.round(pose.x * W - w / 2)), pose.door ? 4 : 11);
     if (anim && anim.type === 'refuse') x += tick % 2 ? 1 : -1;
     const lf = faceFor(s, anim, pose);
-    const b = drawPixie(s, x, tick, { yawn: 'sleep', tired: 'neutral', bored: 'neutral' }[lf] || lf);
+    const b = drawPixie(s, x, tick, { yawn: 'sleep', tired: 'neutral', bored: 'neutral' }[lf] || lf, -Math.round((pose.lift || 0) / 4));
     const side = b.x + b.w + 1 <= 40 ? b.x + b.w + 1 : b.x - 9;
 
     if (s.sick && !s.asleep) blit(ITEM.cloud, b.x + Math.floor(b.w / 2) - 4, Math.max(0, b.y - 8));
@@ -1211,7 +1330,7 @@ const ColorRenderer = (() => {
   const TUFTS = Array.from({ length: 26 }, (_, i) => Math.round(4 + i * 7.3 + (i % 3)));
   const FLOWERS = [[46, 0xff8fbf], [57, 0xffd95a], [71, 0xa9dcff], [88, 0xffffff], [103, 0xff8fbf], [121, 0xa983ea], [137, 0xffd95a], [153, 0xff8fbf], [176, 0xffffff], [188, 0xa9dcff]];
 
-  function scene(s, t, forced) {
+  function scene(s, t, forced, pose) {
     const ph = forced || phaseOf(Core.hour(s)), PH = PHASES[ph];
     for (let y = 0; y < H; y++) main.fill(mix(PH.top, PH.bot, Math.min(1, y / 78)), y * W, y * W + W);
     if (ph === 'night') {
@@ -1236,7 +1355,7 @@ const ColorRenderer = (() => {
     }
     if (!landCache[ph]) landCache[ph] = buildLand(ph);
     comp(main, landCache[ph]);
-    if (ph === 'night') glow(main, 28, 87, 10, 0xffe27a, .45);
+    if (ph === 'night' && !(pose && pose.hidden)) glow(main, 28, 87, 10, 0xffe27a, .45);
 
     const gt = c => PH.k ? mix(c, PH.tint, PH.k) : c;
     const g1 = gt(0x4f9e5c), g2 = gt(0x8ed57c), cen = gt(0xffd95a);
@@ -1250,15 +1369,15 @@ const ColorRenderer = (() => {
       P(main, fx_ - 1, fy, pc); P(main, fx_ + 1, fy, pc); P(main, fx_, fy - 1, pc); P(main, fx_, fy + 1, pc); P(main, fx_, fy, cen);
     });
     if (ph === 'day' || ph === 'dawn') for (let i = 0; i < 2; i++) {
-      const x = 112 + 58 * Math.sin(t * 0.00035 + i * 2.4), y = 46 + 14 * Math.sin(t * 0.0009 + i * 1.3) + 3 * Math.sin(t * 0.004 + i);
+      const bf = World.butterfly(i, t), x = bf.x * W, y = bf.y * H;
       const open = Math.floor(t / 140 + i) % 2, c = i ? 0xff9a4a : 0x7fb6ff, c2 = i ? 0xffd27a : 0xc9e2ff;
       P(main, x, y, DARK); P(main, x, y + 1, DARK);
       if (open) { [[-1, -1], [-2, -1], [-2, 0], [1, -1], [2, -1], [2, 0], [-1, 1], [1, 1]].forEach(([a, b]) => P(main, x + a, y + b, c)); P(main, x - 1, y, c2); P(main, x + 1, y, c2); }
       else { P(main, x - 1, y - 1, c); P(main, x + 1, y - 1, c); P(main, x - 1, y - 2, c); P(main, x + 1, y - 2, c); }
     }
-    if (ph === 'night' || ph === 'dusk') for (let i = 0; i < 9; i++) {
-      const x = ((i * 29 + 30 + 18 * Math.sin(t * 0.0005 + i)) % W + W) % W, y = 64 + 13 * Math.sin(t * 0.0007 + i * 2.1) + (i % 3) * 6;
-      const pulse = (Math.sin(t * 0.004 + i * 1.9) + 1) / 2;
+    const gathered = pose && pose.focus && pose.focus.kind === 'fireflies';
+    if (ph === 'night' || ph === 'dusk') for (let i = gathered ? 6 : 0; i < 9; i++) {
+      const ff = World.firefly(i, t), x = ff.x * W, y = ff.y * H, pulse = ff.pulse;
       if (pulse > .2) { glow(main, x, y, 4, 0xfff27a, .55 * pulse); P(main, x, y, mix(0x88aa44, 0xfffbb0, pulse)); }
     }
     return ph;
@@ -1357,7 +1476,7 @@ const ColorRenderer = (() => {
       return flush();
     }
 
-    scene(s, t);
+    scene(s, t, null, pose);
 
     if (s.stage === 'bud') {
       drawBud(t, s.ageMin, anim && anim.type === 'hatch');
@@ -1376,7 +1495,16 @@ const ColorRenderer = (() => {
       }
     }
 
-    const baby = s.stage === 'baby', half = baby ? 15 : 19;
+    // dentro da casinha: janela acesa (ou apagada) e Zzz saindo
+    if (pose.hidden && ui.view !== 'game') {
+      if (s.lightsOff) { tint(main, 0x080620, .62); glow(main, 28, 87, 5, 0x6a5a9a, .3); }
+      else glow(main, 28, 87, 18, 0xffe27a, .7);
+      layer(B => { for (let i = 0; i < 3; i++) { const q = ((t * 0.0004) + i / 3) % 1; zz(B, 32 + q * 14, 78 - q * 26); } });
+      return flush();
+    }
+    if (pose.door) { rect(main, 17, 92, 7, 8, 0x3a2030); ellF(main, 20, 92, 3.5, 3, 0, 0x3a2030, (u, v) => v <= 0); glow(main, 20, 95, 7, 0xffe27a, .45); }
+
+    const baby = s.stage === 'baby';
     let face = faceFor(s, anim, ui.view === 'game' ? null : pose), hx;
     const sp = pose.sleepP || 0, awakeF = baby ? 93 : 92;
     const F = Math.round(awakeF + (GROUND - 3 - awakeF) * sp - (ui.view === 'game' ? 0 : pose.lift || 0));
@@ -1386,8 +1514,7 @@ const ColorRenderer = (() => {
       if (g.phase === 'ask') { hx = 96; face = 'neutral'; }
       else { hx = g.dir === 'L' ? 36 : 156; face = g.guess === g.dir ? 'happy' : 'sad'; }
     } else {
-      const minX = 54, maxX = Math.max(minX, W - half - 4 - s.poops * 16);
-      hx = minX + pose.x * (maxX - minX) + (pose.shake || 0);
+      hx = pose.x * W + (pose.shake || 0);
       if (anim && anim.type === 'refuse') hx += Math.floor(t / 90) % 2 ? 1 : -1;
     }
     const f = fairy(s.stage, hx, F + bob, face, t, blink && !['happy', 'sleep', 'yawn'].includes(face), ui.view === 'game' ? { wing: pose.wing } : pose);
@@ -1402,6 +1529,24 @@ const ColorRenderer = (() => {
     if (pose.trail && ui.view === 'main') {
       glow(main, f.hx, f.cy, 26, 0xfff3b0, .2);
       layer(B => { for (let i = 0; i < 4; i++) { const a = t * 0.012 + i * Math.PI / 2; star(B, f.hx + Math.cos(a) * 20, f.cy + Math.sin(a) * 9, 2.4, T.gold, a); } });
+    }
+
+    if (pose.focus && ui.view === 'main') {
+      const fc = pose.focus;
+      if (fc.kind === 'flower') {
+        const fxp = fc.x * W, fy = GROUND - 6;
+        for (let i = 0; i < 6; i++) {
+          const q = ((t * 0.0006) + i / 6) % 1;
+          P(main, fxp + (f.hx - fxp) * q + Math.sin(q * 9 + i) * 2, fy + (f.hy + 4 - fy) * q, i % 2 ? 0xffe27a : 0xfff6c2);
+        }
+        if (pose.p > 0.5) layer(B => heart(B, f.hx + (fxp < f.hx ? 13 : -13), f.top + 8 - (pose.p - 0.5) * 22, 0.7));
+      } else if (fc.kind === 'fireflies') {
+        for (let i = 0; i < 6; i++) {
+          const a = t * 0.002 + i * Math.PI / 3, r = 21 + 5 * Math.sin(t * 0.003 + i);
+          const x = f.hx + Math.cos(a) * r, y = f.cy - 4 + Math.sin(a) * r * 0.55, pulse = (Math.sin(t * 0.006 + i * 1.3) + 1) / 2;
+          glow(main, x, y, 7, 0xfff27a, .55 + .35 * pulse); rect(main, x - 0.5, y - 0.5, 2, 2, 0xfff27a); P(main, x, y, 0xffffff);
+        }
+      }
     }
 
     if (ui.view === 'game') {
