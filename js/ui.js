@@ -15,7 +15,7 @@ const BAR_DEF = [
 ];
 
 let s, R;
-const ui = { view: 'main', sel: -1, page: 0, foodIdx: 0, game: null, anim: null, msg: '', msgUntil: 0, lastAlert: false, confirmReset: false };
+const ui = { view: 'main', sel: -1, page: 0, foodIdx: 0, gameIdx: 0, game: null, anim: null, msg: '', msgUntil: 0, lastAlert: false, confirmReset: false };
 const $ = id => document.getElementById(id);
 
 function load() {
@@ -67,8 +67,7 @@ function act(id) {
     case 'play':
       if (s.sick) { refuse(`${n} está doente demais pra brincar.`); break; }
       if (s.energy < 15) { refuse(`${n} está cansada demais pra brincar.`); break; }
-      ui.view = 'game'; ui.game = { phase: 'ask', results: [], guess: null, dir: null, t0: 0 };
-      say('Pra que lado ela vai voar? Use ◀ ou ▶.', 60000); break;
+      ui.view = 'games'; say('Qual brincadeira? Toque numa delas ou use ◀ ▶ e ✓.', 60000); break;
     case 'toilet':
       if (s.bladder < 30) { refuse('Não estou com vontade agora.'); break; }
       s.bladder = 0; s.affection = cl(s.affection + 4); s.hygiene = cl(s.hygiene - 10);
@@ -121,6 +120,45 @@ function feed(kind) {
   render();
 }
 
+const RPS_NAMES = ['Pedra', 'Papel', 'Tesoura'];
+function startGame(i) {
+  ui.gameIdx = i;
+  if (i === 0) {
+    ui.view = 'game'; ui.game = { phase: 'ask', results: [], guess: null, dir: null, t0: 0 };
+    say('Pra que lado ela vai voar? Use ◀ ou ▶, ou toque no lado da tela.', 60000);
+  } else {
+    ui.view = 'rps'; ui.game = { phase: 'ask', pick: 0, you: 0, fairy: 0, rounds: 0, mine: 0, hers: 0, last: 0, t0: 0 };
+    say(`Pedra, papel ou tesoura? Quem fizer 2 pontos primeiro ganha.`, 60000);
+  }
+  beep(880, .04); render();
+}
+function rpsPlay(i) {
+  const g = ui.game;
+  if (!g || ui.view !== 'rps' || g.phase !== 'ask') return;
+  g.pick = i; g.mine = i; g.hers = Math.floor(Math.random() * 3); g.rounds++;
+  // 0 empate · 1 você ganha · -1 a fada ganha  (papel > pedra > tesoura > papel)
+  const d = (g.mine - g.hers + 3) % 3; g.last = d === 0 ? 0 : d === 1 ? 1 : -1;
+  if (g.last === 1) g.you++; else if (g.last === -1) g.fairy++;
+  g.phase = 'show'; g.t0 = performance.now();
+  const duel = `${RPS_NAMES[g.mine]} × ${RPS_NAMES[g.hers]}`;
+  say(g.last === 0 ? `${duel}: empate!` : g.last === 1 ? `${duel}: ponto seu!` : `${duel}: ponto da ${s.name}!`, 60000);
+  beep(g.last === 1 ? 1046 : g.last === -1 ? 330 : 660, .1);
+  render();
+}
+function rpsTick(now) {
+  const g = ui.game;
+  if (!g || g.phase !== 'show' || now - g.t0 < 1600) return;
+  if (g.you >= 2 || g.fairy >= 2 || g.rounds >= 9) {
+    const youWon = g.you > g.fairy, n = s.name;
+    s.fun = cl(s.fun + 18 + g.you * 6 + g.fairy * 4); s.energy = cl(s.energy - 5); s.hunger = cl(s.hunger - 3);
+    ui.view = 'main'; ui.game = null;
+    anim('win', 2500); setTimeout(() => Behavior.play(youWon ? 'giggle' : 'spin'), 2500);
+    say(youWon ? `Você ganhou de ${g.you} a ${g.fairy}! ${n} quer revanche.` : g.you === g.fairy ? `Empatou! ${n} adorou brincar.` : `${n} ganhou de ${g.fairy} a ${g.you} e ficou toda orgulhosa!`);
+    logEv(`Pedra, papel e tesoura: você ${g.you} × ${g.fairy} ${n}.`);
+  } else { g.phase = 'ask'; say('De novo! Pedra, papel ou tesoura?', 60000); }
+  render();
+}
+
 function gameGuess(g) {
   const game = ui.game;
   if (!game || game.phase !== 'ask') return;
@@ -150,6 +188,8 @@ function gameTick(now) {
 function pressLeft() {
   beep(660, .03);
   if (ui.view === 'game') return gameGuess('L');
+  if (ui.view === 'games') { ui.gameIdx = 1 - ui.gameIdx; return render(); }
+  if (ui.view === 'rps') { if (ui.game.phase === 'ask') ui.game.pick = (ui.game.pick + 2) % 3; return render(); }
   if (ui.view === 'food') { ui.foodIdx = 1 - ui.foodIdx; return render(); }
   if (ui.view === 'status') { ui.page = (ui.page + STATUS_PAGES.length - 1) % STATUS_PAGES.length; return render(); }
   ui.sel = ui.sel <= 0 ? ACTS.length - 1 : ui.sel - 1; render();
@@ -157,12 +197,16 @@ function pressLeft() {
 function pressRight() {
   beep(660, .03);
   if (ui.view === 'game') return gameGuess('R');
+  if (ui.view === 'games') { ui.gameIdx = 1 - ui.gameIdx; return render(); }
+  if (ui.view === 'rps') { if (ui.game.phase === 'ask') ui.game.pick = (ui.game.pick + 1) % 3; return render(); }
   if (ui.view === 'food') { ui.foodIdx = 1 - ui.foodIdx; return render(); }
   if (ui.view === 'status') { ui.page = (ui.page + 1) % STATUS_PAGES.length; return render(); }
   ui.sel = (ui.sel + 1) % ACTS.length; render();
 }
 function pressOk() {
   if (ui.view === 'game') return;
+  if (ui.view === 'games') return startGame(ui.gameIdx);
+  if (ui.view === 'rps') return rpsPlay(ui.game.pick);
   if (ui.view === 'food') return feed(ui.foodIdx === 0 ? 'meal' : 'candy');
   if (ui.view === 'status') { ui.view = 'main'; ui.msgUntil = 0; return render(); }
   if (ui.sel >= 0) return act(ACTS[ui.sel].id);
@@ -170,7 +214,7 @@ function pressOk() {
 }
 function pressCancel() {
   beep(520, .03);
-  if (ui.view === 'game') {
+  if (ui.view === 'game' || ui.view === 'rps') {
     ui.view = 'main'; ui.game = null; say('Vocês pararam de brincar.');
     return render();
   }
@@ -206,8 +250,6 @@ function buildPanel() {
     list.forEach(a => {
       const btn = document.createElement('button');
       btn.className = 'ico'; btn.dataset.act = a.id; btn.title = a.label; btn.setAttribute('aria-label', a.label);
-      const cv = document.createElement('canvas'); cv.width = 8; cv.height = 8; btn.appendChild(cv);
-      drawIcon(cv, ICON[a.id], '#2b2236');
       btn.addEventListener('click', () => { ui.sel = ACTS.indexOf(a); ui.view = 'main'; act(a.id); });
       btn.addEventListener('mouseenter', () => { ui.hover = a.label; render(); });
       btn.addEventListener('mouseleave', () => { ui.hover = null; render(); });
@@ -215,6 +257,23 @@ function buildPanel() {
     });
   };
   mk('iconsTop', ACTS.slice(0, 4)); mk('iconsBottom', ACTS.slice(4));
+  paintIcons();
+}
+// ícones no estilo do visual escolhido: LCD em pixel monocromático, Pixel art colorido, os outros suaves
+function paintIcons() {
+  const style = s.skin === 'lcd' ? 'lcd' : s.skin === 'color' ? 'pixel' : s.skin === 'smooth' ? 'soft' : 'rich';
+  if (paintIcons.done === style) return;
+  paintIcons.done = style;
+  document.querySelectorAll('.ico').forEach(btn => {
+    const id = btn.dataset.act;
+    let cv;
+    if (style === 'lcd') { cv = document.createElement('canvas'); cv.width = cv.height = 8; drawIcon(cv, ICON[id], '#2b2236'); }
+    else if (style === 'pixel') cv = ColorRenderer.icon(id);
+    else cv = SmoothRenderer.icon(id, style === 'rich');
+    cv.className = style === 'lcd' || style === 'pixel' ? 'px' : 'soft';
+    btn.replaceChildren(cv);
+  });
+  $('stage').dataset.icons = style;
 }
 
 const hex = c => '#' + c.toString(16).padStart(6, '0');
@@ -277,6 +336,8 @@ const STAGE_LABEL = { bud: 'Botão de flor', baby: 'Fadinha bebê', adult: 'Fada
 function sectionLabel() {
   if (ui.view === 'food') return ['Comida', ui.foodIdx === 0 ? 'Refeição' : 'Doce'];
   if (ui.view === 'status') { const p = STATUS_PAGES[ui.page]; return ['Status · ' + p.label, `${ui.page + 1}/${STATUS_PAGES.length}`]; }
+  if (ui.view === 'games') return ['Brincar', ui.gameIdx === 0 ? 'Adivinhar' : 'Pedra, papel…'];
+  if (ui.view === 'rps') return ['Pedra, papel, tesoura', `você ${ui.game.you} × ${ui.game.fairy}`];
   if (ui.view === 'game') return ['Brincar', `rodada ${Math.min(5, ui.game.results.length + (ui.game.phase === 'ask' ? 1 : 0))}/5`];
   if (ui.hover) return [ui.hover, ''];
   if (ui.sel >= 0) return [ACTS[ui.sel].label, '✓ confirma'];
@@ -309,6 +370,18 @@ function render() {
     if (ch.hidden || !ch.querySelector('[data-k]')) {
       ch.innerHTML = '<button class="chip-btn" data-k="meal">Refeição</button><button class="chip-btn" data-k="candy">Doce</button>';
       ch.querySelectorAll('button').forEach(b => b.onclick = () => feed(b.dataset.k));
+      ch.hidden = false;
+    }
+  } else if (ui.view === 'games') {
+    if (ch.hidden || !ch.querySelector('[data-gm]')) {
+      ch.innerHTML = '<button class="chip-btn" data-gm="0">Adivinhar</button><button class="chip-btn" data-gm="1">Pedra, papel, tesoura</button>';
+      ch.querySelectorAll('button').forEach(b => b.onclick = () => startGame(Number(b.dataset.gm)));
+      ch.hidden = false;
+    }
+  } else if (ui.view === 'rps') {
+    if (ch.hidden || !ch.querySelector('[data-r]')) {
+      ch.innerHTML = RPS_NAMES.map((nm, i) => `<button class="chip-btn" data-r="${i}">${nm}</button>`).join('');
+      ch.querySelectorAll('button').forEach(b => b.onclick = () => rpsPlay(Number(b.dataset.r)));
       ch.hidden = false;
     }
   } else if (ui.view === 'game') {
@@ -368,6 +441,7 @@ function restart() {
 function setSkin() {
   R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : s.skin === 'smooth' ? SmoothRenderer : s.skin === 'painted' ? PaintedRenderer : IllustratedRenderer;
   R.init($('lcd')); skinScale = renderScale($('lcd'));
+  if (document.querySelector('.ico')) paintIcons();
   $('lcd').style.imageRendering = R === SmoothRenderer || R === IllustratedRenderer || R === PaintedRenderer ? 'auto' : 'pixelated';
   $('screen').style.background = s.skin === 'lcd' ? '#a9b897' : '#1d2350';
 }
@@ -402,6 +476,7 @@ function frame(now) {
   syncClock();
 
   if (ui.view === 'game') gameTick(now);
+  if (ui.view === 'rps') rpsTick(now);
   const pose = Behavior.update(s, ui, now, realDt);
   R.draw(s, ui, now, pose);
   frame.acc = (frame.acc || 0) + realDt;
@@ -428,15 +503,24 @@ function start(snap) {
   syncClock();
 
   $('bL').onclick = pressLeft; $('bR').onclick = pressRight; $('bOK').onclick = pressOk; $('bX').onclick = pressCancel;
+  // tocar direto nas opções desenhadas na tela
   $('screen').addEventListener('click', e => {
+    const r = e.currentTarget.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
+    if (ui.view === 'food') { ui.foodIdx = fx < 0.5 ? 0 : 1; beep(880, .04); return feed(ui.foodIdx === 0 ? 'meal' : 'candy'); }
+    if (ui.view === 'games') return startGame(fx < 0.5 ? 0 : 1);
+    if (ui.view === 'rps') return rpsPlay(fx < 1 / 3 ? 0 : fx < 2 / 3 ? 1 : 2);
+    if (ui.view === 'status') {
+      if (fx < 1 / 3) return pressLeft();
+      if (fx > 2 / 3) return pressRight();
+      return pressOk();
+    }
     if (ui.view === 'main' && !s.gone && !s.asleep && s.stage !== 'bud' && !Behavior.state.act) {
       const happy = Core.mood(s) === 'happy';
       Behavior.play(happy ? 'spin' : 'giggle'); say(happy ? 'Wiii! Uma pirueta!' : 'Hihi! Cócegas!', 2500); beep(1320, .05, 2);
       return;
     }
     if (ui.view !== 'game') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    gameGuess(e.clientX - r.left < r.width / 2 ? 'L' : 'R');
+    gameGuess(fx < 0.5 ? 'L' : 'R');
   });
   // tela cheia: a classe faz o layout; a API do navegador esconde as barras quando existe (no iPhone, só a classe)
   const setFull = on => {

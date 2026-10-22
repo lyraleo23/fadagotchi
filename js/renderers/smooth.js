@@ -140,6 +140,94 @@ const SmoothRenderer = (() => {
     ctx.beginPath(); [[-7, 1, 4.6], [7, 1, 5], [0, -2, 6.5], [-3, 2, 4], [3.5, 2, 4]].forEach(([x, y, r]) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); });
     ctx.fill(); ctx.restore();
   }
+  // ---- peças dos ícones e dos jogos ----
+  function bulb(on = true) {
+    if (on) glow(0, -2, 11, 0xfff3b0, .55);
+    ctx.beginPath(); ctx.moveTo(-3, 3.2); ctx.bezierCurveTo(-3.2, 0.6, -6.4, -1.6, -6.4, -4.6); ctx.arc(0, -4.6, 6.4, Math.PI, 0); ctx.bezierCurveTo(6.4, -1.6, 3.2, 0.6, 3, 3.2); ctx.closePath();
+    fs(rg(-1.5, -6, 7.5, on ? T.sun : T.glass), dk(on ? T.gold[2] : T.glass[3], .35));
+    ctx.beginPath(); ctx.moveTo(-1.6, 2.6); ctx.lineTo(-1.6, -2.4); ctx.lineTo(0, -4); ctx.lineTo(1.6, -2.4); ctx.lineTo(1.6, 2.6); fs('transparent', on ? 0xf0a53c : 0x9aa3b5, 0.55);
+    rrect(-3.2, 3, 6.4, 4.2, 1); fs(lg(-3.2, 0, 3.2, 0, [[0, T.gray[0]], [0.45, T.gray[1]], [1, T.gray[3]]]), dk(T.gray[2], .3));
+    [4.4, 5.8].forEach(y => { ctx.beginPath(); ctx.moveTo(-3.1, y); ctx.lineTo(3.1, y); fs('transparent', dk(T.gray[2], .2), 0.4); });
+    rrect(-1.6, 7, 3.2, 1.6, 0.8); fs(css(T.gray[2]), dk(T.gray[2], .3));
+    ell(-2.4, -6.6, 1.1, 2, 0.5); fs('rgba(255,255,255,.85)');
+  }
+  function chart() {
+    rrect(-8.5, -8.5, 17, 17, 3.5); fs(lg(0, -8.5, 0, 8.5, [[0, 0xffffff], [1, 0xe8e0f4]]), 0xb59ad6);
+    [[-5.2, 3.5, T.heart], [-1, 6.5, T.gold], [3.2, 9.5, LOOKS.dress.folha.tones]].forEach(([x, hgt, tn]) => {
+      rrect(x, 6 - hgt, 3, hgt, 1); fs(lg(x, 0, x + 3, 0, [[0, tn[0]], [0.5, tn[1]], [1, tn[2]]]), dk(tn[2], .3));
+    });
+    ctx.beginPath(); ctx.moveTo(-6, 6.3); ctx.lineTo(6.5, 6.3); fs('transparent', 0x8a6f9e, 0.7);
+  }
+  function bubbles() {
+    const bub = (x, y, r) => {
+      ell(x, y, r, r); fs(rg(x, y, r, [0xffffff, 0xe6f7ff, 0xa9dcf5, 0x7fc4f0]), dk(T.water[2], .2));
+      ell(x - r * .38, y - r * .38, r * .28, r * .18, -0.7); fs('rgba(255,255,255,.95)');
+      ctx.beginPath(); ctx.arc(x, y, r * .72, 0.2, 1.2); fs('transparent', 'rgba(255,170,220,.6)', r * .12);
+    };
+    rrect(-8.2, 1.5, 16.4, 5.6, 2.6); fs(lg(0, 1.5, 0, 7, [[0, 0xffd6ea], [1, 0xd8569a]]), dk(0xd8569a, .35));
+    ell(-3.6, 2.2, 3.4, 0.8); fs('rgba(255,255,255,.55)');
+    bub(-3.6, -2.6, 4.2); bub(3.4, -4.4, 3.2); bub(5.2, 1.2, 2); bub(-0.4, -8.4, 1.6);
+  }
+  const STONE = [0xe6e2ee, 0xb3acc2, 0x847c96, 0x5e566e];
+  function rock() {
+    ctx.beginPath(); ctx.moveTo(-7.6, 3.6); ctx.bezierCurveTo(-8.6, -1.6, -5.4, -6.4, -1, -6.6); ctx.bezierCurveTo(4.4, -7, 8.4, -2.6, 7.8, 2.2);
+    ctx.bezierCurveTo(7.4, 5.6, 3.6, 6.6, -0.6, 6.4); ctx.bezierCurveTo(-4.4, 6.2, -7.2, 5.6, -7.6, 3.6); ctx.closePath();
+    fs(rg(-2, -2.5, 9, STONE), dk(STONE[2], .3));
+    ctx.beginPath(); ctx.moveTo(-1.8, -3.4); ctx.quadraticCurveTo(0.4, -1.4, -0.4, 1.4); fs('transparent', css(STONE[3], .6), 0.5);
+    ell(-3.6, -3.4, 1.8, 0.9, -0.5); fs('rgba(255,255,255,.7)');
+    ell(3.4, 2.6, 1.1, 0.7); fs(css(T.leaf[1], .9));
+  }
+  function paper() {
+    ctx.save(); ctx.rotate(-0.12);
+    ctx.beginPath(); ctx.moveTo(-6, -8); ctx.lineTo(3.4, -8); ctx.lineTo(6.4, -5); ctx.lineTo(6.4, 8); ctx.lineTo(-6, 8); ctx.closePath();
+    fs(lg(-6, -8, 6.4, 8, [[0, 0xffffff], [1, 0xebe4dc]]), 0xb8a283);
+    ctx.beginPath(); ctx.moveTo(3.4, -8); ctx.lineTo(3.4, -5); ctx.lineTo(6.4, -5); ctx.closePath(); fs(css(0xdcd2c4), 0xb8a283);
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-3.8, -3.6 + i * 3); ctx.lineTo(i === 3 ? 0.6 : 4, -3.6 + i * 3); fs('transparent', 0x9ec6ea, 0.55); }
+    ctx.restore();
+  }
+  function scissors() {
+    const blade = (sd) => {
+      ctx.save(); ctx.rotate(sd * 0.32);
+      ctx.beginPath(); ctx.moveTo(-0.9, 0.6); ctx.lineTo(-1.2, -8.8); ctx.quadraticCurveTo(0, -10, 0.9, -8.6); ctx.lineTo(1, 0.6); ctx.closePath();
+      fs(lg(-1.2, 0, 1, 0, [[0, 0xffffff], [0.5, 0xd5dae6], [1, 0x9aa3b5]]), 0x737c90);
+      ctx.restore();
+    };
+    blade(-1); blade(1);
+    [[-1, T.heart], [1, T.potion]].forEach(([sd, tn]) => {
+      const x = sd * 3.4, y = 5;
+      ell(x, y, 3, 2.6, sd * 0.35); fs(rg(x, y, 3, tn), dk(tn[2], .35));
+      ell(x, y, 1.5, 1.2, sd * 0.35); fs(css(0xfff6e6));
+    });
+    ell(0, 0.6, 0.9, 0.9); fs(css(T.gold[1]), dk(T.gold[2], .3));
+  }
+  function arrows() {
+    [[-1], [1]].forEach(([d]) => {
+      ctx.beginPath(); ctx.moveTo(d * 8.5, 0); ctx.lineTo(d * 3, -5); ctx.lineTo(d * 3, 5); ctx.closePath(); ctx.lineJoin = 'round';
+      fs(lg(0, -5, 0, 5, [[0, T.gold[0]], [1, T.gold[2]]]), dk(T.gold[2], .3));
+    });
+    ctx.font = '700 10px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 1.6; ctx.strokeStyle = '#ffffff'; ctx.strokeText('?', 0, 0.6); ctx.fillStyle = css(T.potion[2]); ctx.fillText('?', 0, 0.6);
+  }
+  const RPS = [rock, paper, scissors];
+  // ícones das ações (o mesmo desenho para Suave, Ilustrado e Pintado)
+  const ACTF = {
+    food: () => { ctx.translate(0, 2); ctx.scale(1.4, 1.4); bowl(); },
+    pet: () => { ctx.translate(0, 0.5); ctx.scale(2.5, 2.5); heart(); },
+    play: () => star(9.5),
+    toilet: () => { ctx.translate(1.8, 0.5); ctx.scale(1.25, 1.25); potty(); },
+    bath: () => { ctx.scale(1.15, 1.15); bubbles(); }, light: () => { ctx.scale(1.1, 1.1); bulb(true); }, med: () => { ctx.translate(0, 2.5); ctx.scale(1.4, 1.4); potion(); }, status: chart,
+  };
+  function icon(id, rich) {
+    const c = document.createElement('canvas'); c.width = c.height = 72;
+    const oc = ctx, ol = LW;
+    ctx = c.getContext('2d'); ctx.setTransform(72 / 24, 0, 0, 72 / 24, 36, 36); LW = 0.55;
+    if (rich) glow(0, 0, 12, 0xffffff, .55);
+    ctx.save(); ACTF[id](); ctx.restore();
+    if (rich) { sparkle(7.5, -7.5, 2.2, 0xffffff, .95); sparkle(-8, 6, 1.3, 0xfff3b0, .9); }
+    ctx = oc; LW = ol;
+    return c;
+  }
+
   const ICONF = { hunger: () => { ctx.translate(0, 2); bowl(); }, affection: () => { ctx.scale(1.5, 1.5); heart(); }, fun: () => star(8), bladder: () => { ctx.translate(1, 1); potty(); }, hygiene: drop, energy: moonIcon, health: cross };
 
   // ---- fada ----
@@ -516,6 +604,35 @@ const SmoothRenderer = (() => {
       fs(lg(0, ay - 6, 0, ay + 3, [[0, T.gold[0]], [1, T.gold[2]]]), dk(T.gold[2], .3), 1.2);
       return;
     }
+    if (ui.view === 'games' || ui.view === 'rps') {
+      TK = 0;
+      panelBg(0xf2f0ff, 0xd8d0f6);
+      const pointer = ax => { const ay = 104 + Math.sin(t * 0.008) * 1.5; ctx.beginPath(); ctx.moveTo(ax, ay - 6); ctx.lineTo(ax - 6, ay + 2.4); ctx.lineTo(ax + 6, ay + 2.4); ctx.closePath(); ctx.lineJoin = 'round'; fs(lg(0, ay - 6, 0, ay + 3, [[0, T.gold[0]], [1, T.gold[2]]]), dk(T.gold[2], .3), 1.2); };
+      if (ui.view === 'games') {
+        const sel = ui.gameIdx;
+        [[22, 0], [106, 1]].forEach(([x, i]) => card(x, 14, 64, 72, sel === i ? 0xffffff : 0xf4f0fc, sel === i ? T.gold[2] : 0xcfc2ea));
+        glow(sel === 0 ? 54 : 138, 50, 30, 0xfff3b0, .3);
+        at(54, 50, 2.6, arrows);
+        at(124, 40, 1.15, rock); at(152, 40, 1.15, paper); at(138, 62, 1.25, scissors);
+        pointer(sel === 0 ? 54 : 138);
+        return;
+      }
+      const g = ui.game;
+      for (let i = 0; i < 2; i++) { at(80 + i * 9, 8, 1, () => star(3.6, i < g.you ? T.gold : T.heartE)); at(104 + i * 9, 8.4, 0.85, () => heart(i < g.fairy ? T.heart : T.heartE)); }
+      if (g.phase === 'ask') {
+        [10, 70, 130].forEach((x, i) => card(x, 20, 52, 66, g.pick === i ? 0xffffff : 0xf4f0fc, g.pick === i ? T.gold[2] : 0xcfc2ea));
+        glow(36 + g.pick * 60, 53, 26, 0xfff3b0, .3);
+        RPS.forEach((fn, i) => at(36 + i * 60, 53, 2.3, fn));
+        pointer(36 + g.pick * 60);
+        return;
+      }
+      const res = g.last, cardAt = (x, i, win) => { card(x, 24, 64, 66, win ? 0xffffff : 0xf4f0fc, win ? T.gold[2] : 0xcfc2ea); if (win) glow(x + 32, 57, 30, 0xfff3b0, .4); at(x + 32, 57, 2.5, RPS[i]); };
+      cardAt(18, g.mine, res === 1); cardAt(110, g.hers, res === -1);
+      at(50, 100, 1.2, () => star(4, T.gold)); at(142, 100.5, 1, () => heart(T.heart));
+      if (res === 0) { at(96, 57, 1, () => { sparkle(0, -4, 3.4, T.gold[2]); sparkle(0, 4, 3.4, T.gold[2]); }); }
+      else for (let i = 0; i < 4; i++) sparkle((res === 1 ? 50 : 142) + Math.cos(t * 0.006 + i * 1.57) * 34, 57 + Math.sin(t * 0.006 + i * 1.57) * 34, 2.2, 0xffd95a);
+      return;
+    }
 
     scene(s, t, null, pose);
 
@@ -643,6 +760,7 @@ const SmoothRenderer = (() => {
     draw,
     // peças reaproveitadas por outros renderers (desenham no mesmo canvas)
     kit: { at, heart, star, bowl, candy, potion, potty, poop, cloud, sparkle, glow, sparkleRing, zz, T },
+    icon,
     look: l => { applyLook(l); },
   };
 })();

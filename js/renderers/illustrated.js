@@ -565,7 +565,7 @@ const IllustratedRenderer = (() => {
 
   function draw(s, ui, now, pose) {
     const t = now;
-    if (s.gone || ui.view === 'status' || ui.view === 'food') {
+    if (s.gone || ['status', 'food', 'games', 'rps'].includes(ui.view)) {
       if (!s.gone) return SmoothRenderer.draw(s, ui, now, pose);
     }
     applyLook(lookOf(s)); WEAR = wearOf(s); SmoothRenderer.look(lookOf(s));

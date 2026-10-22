@@ -185,6 +185,68 @@ const ColorRenderer = (() => {
     for (let i = 0; i < 5; i++) { P(B, x + i, y, c); P(B, x + i, y + 4, c); }
     P(B, x + 3, y + 1, c); P(B, x + 2, y + 2, c); P(B, x + 1, y + 3, c);
   }
+  // ---- peças dos ícones e dos jogos ----
+  const STONE = [0xe6e2ee, 0xb3acc2, 0x847c96, 0x5e566e];
+  function bulb(B, cx, cy) {
+    ellF(B, cx, cy - 4, 6, 6, 0, sh(T.sun));
+    poly(B, [[cx - 4, cy - 1], [cx + 4, cy - 1], [cx + 3, cy + 3], [cx - 3, cy + 3]], T.sun[2]);
+    P(B, cx - 1, cy - 2, T.gold[2]); P(B, cx + 1, cy - 2, T.gold[2]); P(B, cx, cy - 3, T.gold[2]);
+    rect(B, cx - 3, cy + 3, 7, 4, T.gray[1]); rect(B, cx - 3, cy + 3, 2, 4, T.gray[0]); rect(B, cx - 3, cy + 5, 7, 1, T.gray[2]);
+    rect(B, cx - 1, cy + 7, 3, 1, T.gray[2]);
+    P(B, cx - 3, cy - 7, 0xffffff); P(B, cx - 4, cy - 6, 0xffffff); P(B, cx - 3, cy - 6, 0xffffff);
+  }
+  function chart(B, cx, cy) {
+    rect(B, cx - 8, cy - 8, 17, 17, 0xffffff); rect(B, cx - 8, cy + 6, 17, 3, 0xece6f4);
+    [[-5, 4, T.heart], [-1, 7, T.gold], [3, 10, T.dress]].forEach(([x, hgt, tn]) => { rect(B, cx + x, cy + 6 - hgt, 3, hgt, tn[1]); rect(B, cx + x, cy + 6 - hgt, 1, hgt, tn[0]); rect(B, cx + x + 2, cy + 6 - hgt, 1, hgt, tn[2]); });
+    rect(B, cx - 6, cy + 6, 13, 1, 0x8a6f9e);
+  }
+  function bubbles(B, cx, cy) {
+    rect(B, cx - 8, cy + 2, 17, 5, T.candy[1]); rect(B, cx - 8, cy + 2, 17, 1, T.candy[0]); rect(B, cx - 8, cy + 6, 17, 1, T.candy[2]);
+    const bub = (x, y, r) => { ellF(B, x, y, r, r, 0, (u, v) => (u * u + v * v > 0.6) ? 0x7fc4f0 : (u < -0.2 && v < -0.2 ? 0xffffff : 0xd9f3ff)); };
+    bub(cx - 3, cy - 3, 4.4); bub(cx + 4, cy - 5, 3.3); bub(cx + 5, cy + 1, 2); P(B, cx, cy - 9, 0x7fc4f0);
+  }
+  function rock(B, cx, cy, k = 1) {
+    ellF(B, cx, cy, 8 * k, 6.2 * k, -0.15, sh(STONE));
+    line(B, cx - 1 * k, cy - 3 * k, cx + 0.5 * k, cy + 1 * k, STONE[3]);
+    P(B, cx + 3 * k, cy + 3 * k, T.leaf[1]); P(B, cx + 4 * k, cy + 3 * k, T.leaf[2]);
+  }
+  function paper(B, cx, cy, k = 1) {
+    rect(B, cx - 6 * k, cy - 8 * k, 12 * k + 1, 16 * k + 1, 0xffffff); rect(B, cx - 6 * k, cy + 6 * k, 12 * k + 1, 2 * k + 1, 0xebe4dc);
+    poly(B, [[cx + 3 * k, cy - 8 * k], [cx + 6.5 * k, cy - 8 * k], [cx + 6.5 * k, cy - 4.5 * k]], 0xdcd2c4);
+    for (let i = 0; i < 4; i++) rect(B, cx - 4 * k, cy - 4 * k + i * 3 * k, (i === 3 ? 5 : 8) * k, Math.max(1, Math.round(k * 0.8)), 0x9ec6ea);
+  }
+  function scissors(B, cx, cy, k = 1) {
+    line(B, cx - 3 * k, cy - 9 * k, cx + 1 * k, cy + 1 * k, 0xd5dae6, Math.max(2, Math.round(2 * k)));
+    line(B, cx + 3 * k, cy - 9 * k, cx - 1 * k, cy + 1 * k, 0xb3bacb, Math.max(2, Math.round(2 * k)));
+    ellF(B, cx - 3.5 * k, cy + 5 * k, 3 * k, 2.6 * k, 0, (u, v) => u * u + v * v < 0.3 ? 0xfff6e6 : sh(T.heart)(u, v));
+    ellF(B, cx + 3.5 * k, cy + 5 * k, 3 * k, 2.6 * k, 0, (u, v) => u * u + v * v < 0.3 ? 0xfff6e6 : sh(T.potion)(u, v));
+    P(B, cx, cy + 1 * k, T.gold[1]);
+  }
+  function arrows(B, cx, cy, k = 1) {
+    poly(B, [[cx - 9 * k, cy], [cx - 3 * k, cy - 5.5 * k], [cx - 3 * k, cy + 5.5 * k]], T.gold[1]);
+    poly(B, [[cx + 9 * k, cy], [cx + 3 * k, cy - 5.5 * k], [cx + 3 * k, cy + 5.5 * k]], T.gold[1]);
+    // "?" em pixel (5×7), ampliado
+    const Q = ['.###.', '#...#', '....#', '..##.', '..#..', '.....', '..#..'], q = Math.max(1, Math.round(k));
+    Q.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === '#') rect(B, cx + (i - 2.5) * q, cy + (j - 3.5) * q, q, q, T.potion[2]); }));
+  }
+  const RPS = [rock, paper, scissors];
+  const ACTF = {
+    food: B => bowl(B, 12, 13, 1.35), pet: B => heart(B, 12, 12, 2), play: B => star(B, 12, 12, 10),
+    toilet: B => potty(B, 14, 12, 1.2), bath: B => bubbles(B, 12, 12), light: B => bulb(B, 12, 12),
+    med: B => potion(B, 12, 15, 1.4), status: B => chart(B, 12, 12),
+  };
+  function icon(id) {
+    fx.fill(0); ACTF[id](fx); selout(fx, .55);
+    const c = document.createElement('canvas'); c.width = c.height = 24;
+    const g = c.getContext('2d'), im = g.createImageData(24, 24);
+    for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
+      const v = fx[y * W + x], o = (y * 24 + x) * 4;
+      if (v) { im.data[o] = (v >> 16) & 255; im.data[o + 1] = (v >> 8) & 255; im.data[o + 2] = v & 255; im.data[o + 3] = 255; }
+    }
+    g.putImageData(im, 0, 0); fx.fill(0);
+    return c;
+  }
+
   const ICONF = {
     hunger: (B, cx, cy, k) => bowl(B, cx, cy + 2 * k, k),
     affection: (B, cx, cy, k) => heart(B, cx, cy, k * 1.5),
@@ -628,6 +690,35 @@ const ColorRenderer = (() => {
       layer(B => triUp(B, sel === 0 ? 54 : 138, 97 + bounce, 6, T.gold[1]));
       return flush();
     }
+    if (ui.view === 'games' || ui.view === 'rps') {
+      panelBg(0xf2f0ff, 0xd8d0f6);
+      const bounce = Math.round(Math.sin(t * 0.008) * 2);
+      if (ui.view === 'games') {
+        const sel = ui.gameIdx;
+        card(22, 14, 64, 72, sel === 0 ? 0xffffff : 0xf4f0fc, sel === 0 ? T.gold[2] : 0xcfc2ea);
+        card(106, 14, 64, 72, sel === 1 ? 0xffffff : 0xf4f0fc, sel === 1 ? T.gold[2] : 0xcfc2ea);
+        glow(main, sel === 0 ? 54 : 138, 50, 26, 0xfff3b0, .2);
+        layer(B => { arrows(B, 54, 50, 2.4); rock(B, 124, 40); paper(B, 152, 40); scissors(B, 138, 63); });
+        layer(B => triUp(B, sel === 0 ? 54 : 138, 101 + bounce, 6, T.gold[1]));
+        return flush();
+      }
+      const g = ui.game;
+      layer(B => { for (let i = 0; i < 2; i++) { star(B, 80 + i * 9, 8, 3.6, i < g.you ? T.gold : T.heartE); heart(B, 104 + i * 9, 8, 0.8, i < g.fairy ? T.heart : T.heartE); } });
+      if (g.phase === 'ask') {
+        [10, 70, 130].forEach((x, i) => card(x, 20, 52, 66, g.pick === i ? 0xffffff : 0xf4f0fc, g.pick === i ? T.gold[2] : 0xcfc2ea));
+        glow(main, 36 + g.pick * 60, 53, 24, 0xfff3b0, .2);
+        layer(B => RPS.forEach((fn, i) => fn(B, 36 + i * 60, 53, 2.2)));
+        layer(B => triUp(B, 36 + g.pick * 60, 101 + bounce, 6, T.gold[1]));
+        return flush();
+      }
+      const res = g.last;
+      card(18, 24, 64, 66, res === 1 ? 0xffffff : 0xf4f0fc, res === 1 ? T.gold[2] : 0xcfc2ea);
+      card(110, 24, 64, 66, res === -1 ? 0xffffff : 0xf4f0fc, res === -1 ? T.gold[2] : 0xcfc2ea);
+      if (res) glow(main, res === 1 ? 50 : 142, 57, 28, 0xfff3b0, .3);
+      layer(B => { RPS[g.mine](B, 50, 57, 2.4); RPS[g.hers](B, 142, 57, 2.4); star(B, 50, 101, 4); heart(B, 142, 101, 1); });
+      if (res) for (let i = 0; i < 4; i++) { const a = t * 0.006 + i * 1.57; rect(main, (res === 1 ? 50 : 142) + Math.cos(a) * 34, 57 + Math.sin(a) * 34, 2, 2, 0xffd95a); }
+      return flush();
+    }
 
     scene(s, t, null, pose);
 
@@ -783,6 +874,7 @@ const ColorRenderer = (() => {
       octx = off.getContext('2d'); img = octx.createImageData(W, H);
     },
     draw,
+    icon,
   };
 })();
 

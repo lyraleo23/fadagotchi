@@ -84,9 +84,14 @@ body {
 .ico {
   appearance: none; border: 0; background: none; cursor: pointer;
   padding: 3px 0; display: grid; place-items: center; border-radius: 6px;
-  opacity: .32; transition: opacity .15s, transform .15s;
+  opacity: .32; transition: opacity .15s, transform .15s, filter .15s;
 }
 .ico canvas { width: 24px; height: 24px; image-rendering: pixelated; display: block; }
+.ico canvas.soft { width: 28px; height: 28px; margin: -2px; image-rendering: auto; }
+/* ícones coloridos: apagados ficam desbotados, não transparentes demais */
+[data-icons="pixel"] .ico, [data-icons="soft"] .ico, [data-icons="rich"] .ico { opacity: .72; filter: saturate(.6); }
+[data-icons="pixel"] .ico.on, [data-icons="soft"] .ico.on, [data-icons="rich"] .ico.on,
+[data-icons="pixel"] .ico:hover, [data-icons="soft"] .ico:hover, [data-icons="rich"] .ico:hover { opacity: 1; filter: none; }
 .ico.on { opacity: 1; transform: scale(1.12); }
 .ico:hover { opacity: .8; }
 .ico:focus-visible { outline: 2px solid var(--btn); outline-offset: 1px; opacity: 1; }

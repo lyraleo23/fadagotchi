@@ -62,6 +62,25 @@ const LcdRenderer = (() => {
       blit(ITEM.arrowUp, ui.foodIdx === 0 ? 13 : 29, 20);
       return flush(false);
     }
+    if (ui.view === 'games') {
+      blit(ITEM.guess, 4, 10); blit(ITEM.rock, 26, 6); blit(ITEM.scissors, 34, 12);
+      blit(ITEM.arrowUp, ui.gameIdx === 0 ? 9 : 31, 24);
+      return flush(false);
+    }
+    if (ui.view === 'rps') {
+      const g = ui.game, R3 = [ITEM.rock, ITEM.paper, ITEM.scissors];
+      for (let i = 0; i < 2; i++) { if (i < g.you) { px(2 + i * 3, 1); px(3 + i * 3, 1); } else px(2 + i * 3, 1); if (i < g.fairy) { px(44 - i * 3, 1); px(45 - i * 3, 1); } else px(45 - i * 3, 1); }
+      if (g.phase === 'ask') {
+        R3.forEach((sp, i) => blit(sp, 5 + i * 15, 10));
+        blit(ITEM.arrowUp, 7 + g.pick * 15, 22);
+      } else {
+        blit(R3[g.mine], 8, 11); blit(R3[g.hers], 32, 11);
+        if (g.last === 0) { px(23, 13); px(24, 13); px(23, 16); px(24, 16); }
+        else if (tick % 2 === 0) blit(ITEM.spark, g.last === 1 ? 10 : 34, 4);
+        blit(ITEM.heart, 34, 24); px(11, 25); px(12, 24); px(13, 25); px(12, 26);
+      }
+      return flush(false);
+    }
     if (ui.view === 'game') {
       const g = ui.game, w = spriteW(s);
       for (let i = 0; i < g.results.length; i++) {
