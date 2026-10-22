@@ -90,9 +90,16 @@ function act(id) {
       else say(s.asleep ? 'Luz acesa. À noite ela continua dormindo, e com luz descansa pior.' : 'Luz acesa.');
       break;
     case 'med':
-      if (!s.sick) { refuse(`${n} não está doente. Poção só quando precisar.`); break; }
-      s.sick = false; s.health = cl(s.health + 20); s.fun = cl(s.fun - 5);
-      anim('med', 2200); say('Poção tomada. Já está melhorando!'); logEv(`${n} tomou poção e sarou.`); break;
+      // cura a doença ou recupera a saúde baixa (com a saúde boa, não precisa)
+      if (!s.sick && s.health >= 70) { refuse(`${n} está com a saúde boa. Poção só quando precisar.`); break; }
+      if (s.sick) {
+        s.sick = false; s.health = cl(s.health + 20);
+        say('Poção tomada. Já está melhorando!'); logEv(`${n} tomou poção e sarou.`);
+      } else {
+        s.health = cl(s.health + 30);
+        say(`Poção tomada. ${n} recuperou as forças!`); logEv(`${n} tomou poção pra recuperar a saúde.`);
+      }
+      s.fun = cl(s.fun - 5); anim('med', 2200); break;
     case 'status': ui.view = 'status'; ui.page = 0; say('◀ ▶ passam a página. ✓ ou ✕ fecha.', 60000); break;
   }
   render();
@@ -317,6 +324,7 @@ function render() {
   const tags = [];
   if (s.gone) tags.push(['crit', 'foi embora']);
   if (s.sick) tags.push(['crit', 'doente']);
+  else if (!s.gone && s.stage !== 'bud' && s.health < 30) tags.push(['crit', 'fraquinha']);
   if (s.asleep) tags.push(['', 'dormindo']);
   if (s.lightsOff) tags.push(['', 'luz apagada']);
   if (s.poops) tags.push(['warn', s.poops === 1 ? '1 sujeira no chão' : `${s.poops} sujeiras no chão`]);

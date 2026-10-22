@@ -1,6 +1,6 @@
 /* Service worker do Fadagotchi: guarda o app para funcionar offline.
    Ao publicar uma versão nova, suba VERSION (igual a js/version.js). */
-const VERSION = '1.6.0';
+const VERSION = '1.6.1';
 const CACHE = 'fadagotchi-' + VERSION;
 const FONTS = 'fadagotchi-fonts';
 const ASSETS = [

@@ -106,6 +106,7 @@ const Core = {
     if (s.gone || s.stage === 'bud') return [];
     const n = [];
     if (s.sick) n.push('está doente e precisa de poção');
+    else if (s.health < 30) n.push('está fraquinha e precisa de poção');
     if (s.asleep) return n;
     if (s.hunger < 25) n.push('está com fome');
     if (s.bladder > 80) n.push('precisa ir ao banheiro');
