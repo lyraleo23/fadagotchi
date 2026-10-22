@@ -1,4 +1,4 @@
-# Roteiro de arte — visual Pintado (fada adulta)
+# Roteiro de arte — visual Pintado
 
 Referência oficial: `art/referencia/fada-adulta.png`.
 
@@ -9,6 +9,95 @@ Referência oficial: `art/referencia/fada-adulta.png`.
 3. Se vier com fundo (ou um xadrez desenhado), peça de novo: "fundo transparente de verdade".
 4. Se a fada sair diferente (roupa, cabelo, rosto), peça para corrigir citando a referência.
 5. Mande os arquivos para o Claude; eles vão para `art/recebidas/`.
+
+# Rodada 2 — fadinha bebê
+
+## Rodada 2 · Bebê: referência (mande antes do resto)
+
+### B1. referência da bebê — `bebe_referencia.png`
+
+```
+Ilustração digital semi-realista, no MESMO estilo de pintura digital da fada da imagem anexada, de uma FADINHA BEBÊ de uns 2 anos: é a versão bebê dessa fada. Corpo inteiro, vista de frente, em pé, braços relaxados, expressão fofa e curiosa. Mesmo cabelo rosa, só que curtinho e cacheado, com um tufinho no topo preso por uma florzinha branca; orelhinhas pontudas de elfo; olhos grandes cor de ametista; pele clara; bochechas rosadas e gordinhas. Veste um vestidinho rodado de folhas verdes em camadas que vai até os joelhos, com uma faixa dourada fina, e sapatinhos rosa de amarrar. Proporções de bebê: cabeça grande, corpo pequeno e rechonchudo, pernas curtas. SEM asas. Iluminação suave vinda de cima à esquerda. Fundo transparente de verdade (PNG). Corpo inteiro centralizado, com pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536. Anexe a referência da fada adulta para manter o estilo.
+```
+
+## Rodada 2 · Bebê: poses do corpo
+
+### B2. acenando — `bebe_pose_acenando.png`
+
+```
+Pose: de frente, acenando toda feliz com o bracinho que fica do LADO ESQUERDO DA IMAGEM levantado e a mãozinha aberta; o outro bracinho relaxado. Sorrisinho. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B3. espreguiçando — `bebe_pose_espreguicando.png`
+
+```
+Pose: de frente, se espreguiçando com os dois bracinhos esticados para cima, olhos fechados, sorriso sonolento de quem acabou de acordar. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B4. com fome — `bebe_pose_fome.png`
+
+```
+Pose: de frente, as duas mãozinhas na barriguinha, carinha de fome um pouco triste, beicinho. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B5. bocejando — `bebe_pose_bocejo.png`
+
+```
+Pose: de frente, bocejando com a mãozinha na frente da boca aberta, olhos fechados. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B6. cochilando em pé — `bebe_pose_cochilo.png`
+
+```
+Pose: de frente, em pé cochilando: cabecinha inclinada para o lado, olhos fechados, bracinhos soltos, carinha tranquila de sono. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B7. entediada, sentada — `bebe_pose_tedio.png`
+
+```
+Pose: sentadinha no chão abraçando os joelhos, queixinho apoiado nos joelhos, olhar entediado de lado. Mantenha a cabeça do mesmo tamanho da referência; a figura fica na parte de baixo da imagem. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+### B8. de lado (três quartos) — `bebe_pose_lado.png`
+
+```
+Pose: flutuando, corpinho virado em três quartos para a DIREITA DA IMAGEM, olhando para a direita, bracinhos abertos para os lados, perninhas um pouco dobradas como quem voa. Use a imagem de referência da BEBÊ anexada: é a MESMA fadinha bebê (mesmo rosto, cabelo rosa curtinho e cacheado com tufinho e florzinha branca, orelhinhas pontudas, olhos ametista, bochechas gordinhas, vestidinho rodado de folhas verdes até os joelhos com faixa dourada, sapatinhos rosa). Mesmo estilo de pintura digital semi-realista, mesma iluminação suave vinda de cima à esquerda e mesma escala (a cabeça do mesmo tamanho da referência). Proporções de bebê. Corpo inteiro, SEM asas. Fundo transparente de verdade (PNG, sem xadrez desenhado). Pequena margem acima da cabeça e abaixo dos pés. Formato retrato 1024×1536.
+```
+
+## Rodada 2 · Bebê: expressões do rosto
+
+### B9. feliz — `bebe_rosto_feliz.png`
+
+```
+Expressão: muito feliz, sorriso aberto e risonho, olhos sorrindo. Use a imagem de referência da BEBÊ anexada: close do rosto da MESMA fadinha bebê, de frente, mesmo estilo de pintura digital semi-realista e mesma iluminação suave vinda de cima à esquerda. Enquadre do topo do tufinho de cabelo até um pouco abaixo do queixo, rosto centralizado e reto (sem inclinar a cabeça). Sem maquiagem. Fundo transparente de verdade (PNG). Formato quadrado 1024×1024.
+```
+
+### B10. triste — `bebe_rosto_triste.png`
+
+```
+Expressão: tristinha, beicinho, sobrancelhas erguidas no meio, olhos marejados com uma pequena lágrima. Use a imagem de referência da BEBÊ anexada: close do rosto da MESMA fadinha bebê, de frente, mesmo estilo de pintura digital semi-realista e mesma iluminação suave vinda de cima à esquerda. Enquadre do topo do tufinho de cabelo até um pouco abaixo do queixo, rosto centralizado e reto (sem inclinar a cabeça). Sem maquiagem. Fundo transparente de verdade (PNG). Formato quadrado 1024×1024.
+```
+
+### B11. dormindo — `bebe_rosto_dormindo.png`
+
+```
+Expressão: dormindo, olhos fechados, rosto sereno, boquinha relaxada e fechada. Use a imagem de referência da BEBÊ anexada: close do rosto da MESMA fadinha bebê, de frente, mesmo estilo de pintura digital semi-realista e mesma iluminação suave vinda de cima à esquerda. Enquadre do topo do tufinho de cabelo até um pouco abaixo do queixo, rosto centralizado e reto (sem inclinar a cabeça). Sem maquiagem. Fundo transparente de verdade (PNG). Formato quadrado 1024×1024.
+```
+
+### B12. cansada — `bebe_rosto_cansada.png`
+
+```
+Expressão: com soninho, pálpebras meio fechadas, olhar sonolento, boquinha pequena. Use a imagem de referência da BEBÊ anexada: close do rosto da MESMA fadinha bebê, de frente, mesmo estilo de pintura digital semi-realista e mesma iluminação suave vinda de cima à esquerda. Enquadre do topo do tufinho de cabelo até um pouco abaixo do queixo, rosto centralizado e reto (sem inclinar a cabeça). Sem maquiagem. Fundo transparente de verdade (PNG). Formato quadrado 1024×1024.
+```
+
+### B13. entediada — `bebe_rosto_entediada.png`
+
+```
+Expressão: entediada, olhar de lado para cima, boquinha reta, uma bochecha inflada. Use a imagem de referência da BEBÊ anexada: close do rosto da MESMA fadinha bebê, de frente, mesmo estilo de pintura digital semi-realista e mesma iluminação suave vinda de cima à esquerda. Enquadre do topo do tufinho de cabelo até um pouco abaixo do queixo, rosto centralizado e reto (sem inclinar a cabeça). Sem maquiagem. Fundo transparente de verdade (PNG). Formato quadrado 1024×1024.
+```
+
+
+# Rodada 1 — fada adulta (concluída)
 
 ## Poses do corpo
 
