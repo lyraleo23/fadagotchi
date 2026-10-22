@@ -41,7 +41,7 @@ const Backup = (() => {
     const keep = { speed: 1, sound: s.sound, skin: s.skin };
     s = Object.assign(newState(), pending, keep);
     if (!s.look) s.look = { ...DEFAULT_LOOK };
-    s.skinV = 2; s.simOffset = 0;
+    s.skinV = 3; s.simOffset = 0;
     if (s.simTime > Date.now()) s.simTime = Date.now();
     logEv(`${s.name} chegou de outro aparelho.`);
     ui.view = 'main'; ui.sel = -1; ui.anim = null;

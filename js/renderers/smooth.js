@@ -3,7 +3,8 @@
    resolução: contornos arredondados, gradientes e brilhos suaves.
    Mesmo contrato dos outros: init(canvas) + draw(state, ui, now, pose).  */
 const SmoothRenderer = (() => {
-  const W = 192, H = 120, GROUND = 100, S = 8;
+  const W = 192, H = 120, GROUND = 100;
+  let S = 8;
   let ctx, LW = 0.45;
   const DARK = 0x24142f;
   const T = {
@@ -638,8 +639,11 @@ const SmoothRenderer = (() => {
   }
 
   return {
-    init(canvas) { canvas.width = W * S; canvas.height = H * S; ctx = canvas.getContext('2d'); },
+    init(canvas, scale) { S = scale || renderScale(canvas); canvas.width = W * S; canvas.height = H * S; ctx = canvas.getContext('2d'); },
     draw,
+    // peças reaproveitadas por outros renderers (desenham no mesmo canvas)
+    kit: { at, heart, star, bowl, candy, potion, potty, poop, cloud, sparkle, glow, sparkleRing, zz, T },
+    look: l => { applyLook(l); },
   };
 })();
 

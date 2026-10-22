@@ -358,9 +358,9 @@ function restart() {
   save(); renderLooks(); render();
 }
 function setSkin() {
-  R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : SmoothRenderer;
+  R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : s.skin === 'smooth' ? SmoothRenderer : IllustratedRenderer;
   R.init($('lcd'));
-  $('lcd').style.imageRendering = R === SmoothRenderer ? 'auto' : 'pixelated';
+  $('lcd').style.imageRendering = R === SmoothRenderer || R === IllustratedRenderer ? 'auto' : 'pixelated';
   $('screen').style.background = s.skin === 'lcd' ? '#a9b897' : '#1d2350';
 }
 
@@ -399,6 +399,7 @@ function start(snap) {
   else {
     if (!s.look) s.look = { ...DEFAULT_LOOK };
     if (!s.skinV) { if (s.skin === 'color') s.skin = 'smooth'; s.skinV = 2; }
+    if (s.skinV < 3) { if (s.skin === 'smooth') s.skin = 'illustrated'; s.skinV = 3; }
     s = Object.assign(newState(), s);
     // relógio adiantado por testes: em 1× volta ao horário real; acima disso vira adiantamento
     if (s.simTime > Date.now() + (s.simOffset || 0)) {

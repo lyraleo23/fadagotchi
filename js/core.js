@@ -9,7 +9,7 @@
      world.js           mapa do cenário (casinha, flores, borboletas, vaga-lumes)
      behavior.js        decide o gesto do momento e entrega uma Pose
      faces.js           expressão final + páginas de status
-     renderers/*.js     Smooth (vetorial, padrão), Pixel art e LCD.
+     renderers/*.js     Ilustrado (padrão), Suave, Pixel art e LCD.
                         Interface comum: init(canvas), draw(state, ui, now, pose)
      backup.js          exportar/importar a fada
      app.js             instalação como app (service worker, atualizações)
@@ -27,7 +27,7 @@ function newState() {
     v: 1, name: 'Lumi', stage: 'bud', ageMin: 0, simTime: now, simOffset: 0, lastReal: now,
     hunger: 80, affection: 70, fun: 70, bladder: 10, hygiene: 95, energy: 90, health: 100,
     sick: false, poops: 0, asleep: false, lightsOff: false, sweets: [],
-    gone: false, speed: 1, sound: false, skin: 'smooth', skinV: 2, look: randomLook(), care: 0, unlocked: [], wear: {}, log: [],
+    gone: false, speed: 1, sound: false, skin: 'illustrated', skinV: 3, look: randomLook(), care: 0, unlocked: [], wear: {}, log: [],
   };
 }
 
