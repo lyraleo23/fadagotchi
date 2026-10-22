@@ -71,7 +71,7 @@ body {
     0 24px 50px rgba(0, 0, 0, .45);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px;
-  padding: 15% 8.5% 8%;
+  padding: 16% 10% 8%;
 }
 .loop {
   position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
@@ -224,7 +224,7 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
     </div>
     <p class="caption" id="caption" aria-live="polite"></p>
     <div class="choices" id="choices" hidden></div>
-    <p class="hint"><kbd>A</kbd> escolhe · <kbd>B</kbd> confirma · <kbd>C</kbd> volta. Ou toque direto nos ícones.</p>
+    <p class="hint"><kbd>A</kbd> escolhe · <kbd>B</kbd> confirma · <kbd>C</kbd> volta. Toque nos ícones ou na própria fada.</p>
   </section>
 
   <aside class="panel" aria-label="Ficha da fada">
@@ -275,10 +275,11 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 
 <script>
 /* =====================================================================
-   FADAGOTCHI — v0.3
+   FADAGOTCHI — v0.4
    Arquitetura:
      1. Sprites   — pixel art (LCD monocromático + itens coloridos)
      2. Core      — estado + regras da simulação (não sabe nada de tela)
+     2b. Behavior — decide o gesto/pose do momento e entrega uma Pose
      3. Renderers — LcdRenderer (48×32, clássico) e ColorRenderer
                     (192×120, colorido HD, fada desenhada proceduralmente).
                     Interface comum: init(canvas), draw(state, ui, now).
@@ -519,15 +520,108 @@ const Core = {
   },
 };
 
+/* ---------- 2b. BEHAVIOR (gera a Pose de cada frame) ----------
+   Fica entre o Core e os renderers. O Core diz COMO ela está (fome, sono...),
+   o Behavior decide O QUE ela está fazendo agora (andar, acenar, bocejar...)
+   e entrega uma Pose. Qualquer renderer — LCD, pixel art, sprites ou um
+   futuro visual realista — só precisa saber desenhar uma Pose.
+
+   Pose = {
+     x: 0..1          posição horizontal no "palco"
+     facing: -1..1    -1 olhando p/ esquerda · 0 de frente · 1 p/ direita
+     lift: px         quanto sobe (+) ou desce (−) em relação à altura normal
+     sleepP: 0..1     0 acordada · 1 dormindo (transição suave)
+     wing: rad        fase da batida de asas
+     face: string|null  happy · neutral · sad · sleep · yawn · tired · bored
+     armL: down · wave · up · belly · mouth      (braço livre)
+     armR: wand · up                              (braço da varinha)
+     nod, kick, shake, trail: detalhes (cabeceada, chutinho, tremida, rastro)
+     action, p: gesto atual e progresso 0..1
+   }
+*/
+const Behavior = (() => {
+  const b = { x: 0.5, target: 0.5, nextWander: 0, facing: 0, act: null, nextIdle: 0, wasAsleep: null, sleepP: 0, wing: 0 };
+  const DUR = { wave: 2200, spin: 1500, yawn: 2400, doze: 4200, hungry: 2600, bored: 5200, fallAsleep: 2800, stretch: 2400, giggle: 1400 };
+  const LOOPING = ['fallAsleep', 'stretch'];
+
+  function play(type, now = performance.now()) { b.act = { type, t0: now, dur: DUR[type] }; }
+  function reset(s) { Object.assign(b, { x: 0.5, target: 0.5, facing: 0, act: null, nextIdle: 0, wasAsleep: s ? s.asleep : null, sleepP: s && s.asleep ? 1 : 0 }); }
+
+  function pickIdle(s) {
+    const r = Math.random(), h = Core.hour(s);
+    if (s.energy < 25) return r < .7 ? 'doze' : 'yawn';
+    if (s.hunger < 25) return 'hungry';
+    if (s.fun < 25) return 'bored';
+    if (s.energy < 45 || h >= 20.5) return r < .5 ? 'yawn' : null;
+    const m = Core.mood(s);
+    if (m === 'happy') return r < .35 ? 'wave' : r < .65 ? 'spin' : null;
+    return r < .3 ? 'wave' : null;
+  }
+
+  function update(s, ui, now, dt) {
+    if (b.wasAsleep === null) { b.wasAsleep = s.asleep; b.sleepP = s.asleep ? 1 : 0; }
+    if (s.asleep !== b.wasAsleep) { b.wasAsleep = s.asleep; if (s.stage !== 'bud' && !s.gone) play(s.asleep ? 'fallAsleep' : 'stretch', now); }
+
+    let act = b.act && now - b.act.t0 < b.act.dur ? b.act : (b.act = null);
+    const busy = !!(ui.anim && now - ui.anim.t0 < ui.anim.dur);
+    if (busy && act && !LOOPING.includes(act.type)) act = b.act = null;
+    const free = ui.view === 'main' && !s.gone && s.stage !== 'bud';
+
+    // transição de sono
+    if (act && act.type === 'fallAsleep') b.sleepP = Math.min(1, Math.max(0, ((now - act.t0) / act.dur - 0.4) / 0.6));
+    else if (act && act.type === 'stretch') b.sleepP = Math.max(0, 1 - (now - act.t0) / (act.dur * 0.35));
+    else b.sleepP = s.asleep ? 1 : 0;
+
+    // gestos espontâneos
+    if (free && !s.asleep && !act && !busy) {
+      if (!b.nextIdle) b.nextIdle = now + 4000;
+      if (now > b.nextIdle) { const k = pickIdle(s); if (k) { play(k, now); act = b.act; } b.nextIdle = now + 5000 + Math.random() * 5000; }
+    }
+
+    // passeio
+    const prevX = b.x;
+    if (free && !s.asleep && !busy && !act) {
+      if (now > b.nextWander) { b.target = Math.random(); b.nextWander = now + 1800 + Math.random() * 2800; }
+      const d = b.target - b.x;
+      b.x += Math.sign(d) * Math.min(Math.abs(d), dt * 0.00022);
+    }
+    const vx = (b.x - prevX) / Math.max(1, dt);
+    let tf = Math.abs(vx) > 0.00005 ? Math.sign(vx) * 0.9 : 0;
+    if (act && act.type === 'hungry') tf = -0.7; // olha para a casinha
+    b.facing += (tf - b.facing) * Math.min(1, dt * 0.005);
+
+    const p = act ? (now - act.t0) / act.dur : 0;
+    const pose = { x: b.x, facing: b.facing, lift: 0, sleepP: b.sleepP, face: null, armL: 'down', armR: 'wand', nod: 0, kick: false, shake: 0, trail: false, action: act ? act.type : null, p };
+    let rate = 1;
+    if (act) switch (act.type) {
+      case 'wave': pose.face = 'happy'; pose.armL = 'wave'; break;
+      case 'giggle': pose.face = 'happy'; pose.lift = Math.abs(Math.sin(p * Math.PI * 3)) * 3; rate = 1.6; break;
+      case 'spin': pose.face = 'happy'; pose.facing = Math.sin(p * Math.PI * 4); pose.lift = Math.sin(p * Math.PI) * 7; rate = 2.2; pose.trail = true; break;
+      case 'yawn': { const mid = p > 0.2 && p < 0.8; pose.face = mid ? 'yawn' : 'tired'; pose.armL = mid ? 'mouth' : 'down'; rate = .6; break; }
+      case 'doze': { const k = Math.floor(p * 6) % 2; pose.face = k ? 'sleep' : 'tired'; pose.nod = k; pose.lift = -3 * Math.sin(p * Math.PI); rate = .4; break; }
+      case 'hungry': pose.face = 'sad'; pose.armL = 'belly'; pose.shake = p > 0.3 && p < 0.6 && Math.floor(now / 80) % 2 ? 1 : 0; break;
+      case 'bored': pose.face = 'bored'; pose.lift = -6 * Math.min(1, p * 4) * (p < 0.85 ? 1 : (1 - p) / 0.15); pose.kick = true; rate = .5; break;
+      case 'fallAsleep': pose.face = p < 0.4 ? 'yawn' : p < 0.7 ? 'tired' : 'sleep'; pose.armL = p < 0.4 ? 'mouth' : 'down'; rate = Math.max(0, 1 - p); break;
+      case 'stretch': pose.face = p < 0.45 ? 'sleep' : 'happy'; pose.armL = 'up'; pose.armR = 'up'; pose.lift = Math.sin(p * Math.PI) * 3; break;
+    }
+    if (s.asleep && b.sleepP >= 1) rate = 0;
+    b.wing += dt * 0.014 * rate;
+    pose.wing = b.wing;
+    return pose;
+  }
+  return { update, play, reset, state: b };
+})();
+
 /* expressão do momento (compartilhada pelos renderers) */
 const HAPPY_ANIMS = ['eat', 'pet', 'toilet', 'bath', 'med', 'hatch', 'win', 'grow'];
-function faceFor(s, anim) {
+function faceFor(s, anim, pose) {
   let face = Core.mood(s);
+  if (pose && pose.face) face = pose.face;
   if (anim) {
     if (HAPPY_ANIMS.includes(anim.type)) face = 'happy';
     if (['refuse', 'lose', 'accident'].includes(anim.type)) face = 'sad';
   }
-  if (s.asleep) face = 'sleep';
+  if (s.asleep && (!pose || pose.sleepP >= 1)) face = 'sleep';
   return face;
 }
 const STATUS_PAGES = [
@@ -581,7 +675,7 @@ const LcdRenderer = (() => {
     }
   }
 
-  function draw(s, ui, now) {
+  function draw(s, ui, now, pose) {
     grid.fill(0);
     const tick = Math.floor(now / 260);
     const dark = s.lightsOff;
@@ -635,9 +729,10 @@ const LcdRenderer = (() => {
 
     const w = spriteW(s);
     const maxX = Math.max(1, 47 - w - 9 * s.poops);
-    let x = 1 + Math.round(ui.px * (maxX - 1));
+    let x = 1 + Math.round(pose.x * (maxX - 1));
     if (anim && anim.type === 'refuse') x += tick % 2 ? 1 : -1;
-    const b = drawPixie(s, x, tick, faceFor(s, anim));
+    const lf = faceFor(s, anim, pose);
+    const b = drawPixie(s, x, tick, { yawn: 'sleep', tired: 'neutral', bored: 'neutral' }[lf] || lf);
     const side = b.x + b.w + 1 <= 40 ? b.x + b.w + 1 : b.x - 9;
 
     if (s.sick && !s.asleep) blit(ITEM.cloud, b.x + Math.floor(b.w / 2) - 4, Math.max(0, b.y - 8));
@@ -873,19 +968,25 @@ const ColorRenderer = (() => {
     health: (B, cx, cy, k) => cross(B, cx, cy, k),
   };
 
-  // ---- fada ----
-  function fairy(stage, cx, F, face, t, blink) {
+  // ---- fada (desenha uma Pose) ----
+  function fairy(stage, cx, F, face, t, blink, pose = {}) {
     body.fill(0); wing.fill(0);
     const baby = stage === 'baby';
     const R = baby ? 10 : 9;
     const legH = baby ? 3 : 7, skirtH = baby ? 7 : 12, bodiceH = baby ? 0 : 5;
     const skirtBot = F - legH, skirtTop = skirtBot - skirtH, ty = skirtTop - bodiceH;
-    const hx = Math.round(cx), hy = ty - R + 1;
-    const sleeping = face === 'sleep';
+    const bx = Math.round(cx);                                   // eixo do corpo
+    const fc = Math.max(-1, Math.min(1, pose.facing || 0));      // -1 esquerda · 0 frente · 1 direita
+    const fo = Math.round(fc * 2);                               // deslocamento dos traços do rosto
+    const hx = bx + Math.round(fc);                              // a cabeça inclina para onde ela olha
+    const hy = ty - R + 1 + (pose.nod || 0);
+    const folded = (pose.sleepP || 0) > 0.6;
+    const armL = pose.armL || 'down', armR = baby ? 'none' : (pose.armR || 'wand');
 
-    // asas iridescentes
-    const flap = sleeping ? 0 : Math.sin(t * 0.014);
-    const ws = baby ? 0.78 : 1, sx = hx, sy = ty + 2, shift = t * 0.002;
+    // asas iridescentes, com perspectiva quando ela vira
+    const flap = folded ? 0 : Math.sin(pose.wing ?? t * 0.014);
+    const ws = baby ? 0.78 : 1, sx = bx, sy = ty + 2, shift = t * 0.002;
+    const sL = 1 + (fc > 0 ? 0.12 : 0.3) * fc, sR = 1 - (fc < 0 ? 0.12 : 0.3) * fc;
     const wcol = (u, v) => {
       if (u * u + v * v > 0.8) return 0x8cc4ec;
       if (Math.abs(v) < 0.09 && u < 0.75) return 0xa6d6f5;
@@ -893,79 +994,108 @@ const ColorRenderer = (() => {
       const tt = (u + 1) / 2;
       return mix(0xf0fdff, mix(0xb8e4ff, 0xe8caff, (Math.sin(tt * 3 + v * 2 + shift) + 1) / 2), tt * 0.9);
     };
-    const pair = (phi, rx, ry) => {
+    const wingOne = (phi, rx, ry, side) => {
+      const k = side < 0 ? sL : sR; rx *= k; ry *= k;
       const dx = Math.cos(phi) * rx * 0.95, dy = Math.sin(phi) * rx * 0.95;
-      ellF(wing, sx + dx, sy + dy, rx, ry, phi, wcol);
-      ellF(wing, sx - dx, sy + dy, rx, ry, -phi, (u, v) => wcol(-u, v));
+      if (side < 0) ellF(wing, sx + dx, sy + dy, rx, ry, phi, wcol);
+      else ellF(wing, sx - dx, sy + dy, rx, ry, -phi, (u, v) => wcol(-u, v));
     };
-    if (sleeping) { pair(Math.PI + 1.3, 14 * ws, 4 * ws); pair(Math.PI + 0.95, 9 * ws, 3 * ws); }
+    const pair = (phi, rx, ry) => { wingOne(phi, rx, ry, -1); wingOne(phi, rx, ry, 1); };
+    if (folded) { pair(Math.PI + 1.3, 14 * ws, 4 * ws); pair(Math.PI + 0.95, 9 * ws, 3 * ws); }
     else { pair(Math.PI + 0.6 + 0.42 * flap, 17 * ws, (7 + 1.6 * flap) * ws); pair(Math.PI - 0.62 + 0.2 * flap, 10 * ws, 4.6 * ws); }
 
-    // cabelo de trás
+    // cabelo de trás (vai para o lado oposto ao olhar)
     const sway = Math.sin(t * 0.003);
     if (!baby) {
-      ellF(body, hx + sway * 0.6, hy + R * 0.7, R + 3, R + 3.5, 0, (u, v) => v < -0.1 ? 0 : (Math.round((u + 1) * 7) % 3 === 0 ? T.hair[2] : sh(T.hair)(u, v)));
-      ellF(body, hx + 1, hy - R - 2, 4.2, 3.6, 0, sh(T.hair));
+      ellF(body, hx - fo + sway * 0.6, hy + R * 0.7, R + 3, R + 3.5, 0, (u, v) => v < -0.1 ? 0 : (Math.round((u + 1) * 7) % 3 === 0 ? T.hair[2] : sh(T.hair)(u, v)));
+      ellF(body, hx + 1 - Math.round(fo / 2), hy - R - 2, 4.2, 3.6, 0, sh(T.hair));
     }
-    ellF(body, hx, hy, R + 2, R + 1.5, 0, sh(T.hair));
-    if (baby) { P(body, hx + 1, hy - R - 2, T.hair[1]); P(body, hx + 2, hy - R - 3, T.hair[1]); P(body, hx + 3, hy - R - 3, T.hair[1]); P(body, hx + 4, hy - R - 2, T.hair[2]); }
+    ellF(body, hx - Math.round(fo / 2), hy, R + 2, R + 1.5, 0, sh(T.hair));
+    if (baby) { const cx2 = hx - Math.round(fo / 2); P(body, cx2 + 1, hy - R - 2, T.hair[1]); P(body, cx2 + 2, hy - R - 3, T.hair[1]); P(body, cx2 + 3, hy - R - 3, T.hair[1]); P(body, cx2 + 4, hy - R - 2, T.hair[2]); }
 
-    // pernas e sapatilhas (atrás da saia)
-    [hx - 3, hx + 1].forEach((x, i) => {
-      rect(body, x, skirtBot - 2, 2, legH + 1, T.skin[1]); rect(body, x + 1, skirtBot - 2, 1, legH + 1, T.skin[2]);
-      ellF(body, x + (i ? 1 : 0), F - 0.5, 2, 1.3, 0, sh(T.shoe));
-      if (!baby) P(body, i ? x + 2 : x - 1, F - 1, 0xffffff);
+    // pernas e sapatilhas (balançam quando ela está entediada)
+    const kick = pose.kick ? Math.round(Math.sin(t * 0.01) * 1.5) : 0;
+    [bx - 3, bx + 1].forEach((x, i) => {
+      const kk = i ? -kick : kick;
+      if (kk) line(body, x, skirtBot - 2, x + kk, F - 2, T.skin[1], 2);
+      else { rect(body, x, skirtBot - 2, 2, legH + 1, T.skin[1]); rect(body, x + 1, skirtBot - 2, 1, legH + 1, T.skin[2]); }
+      ellF(body, x + kk + (i ? 1 : 0), F - 0.5, 2, 1.3, 0, sh(T.shoe));
+      if (!baby) P(body, (i ? x + 2 : x - 1) + kk, F - 1, 0xffffff);
     });
 
     // saia de pétalas em duas camadas
     const ks = baby ? [-1, 0, 1] : [-2, -1, 0, 1, 2];
     const kf = baby ? [-0.5, 0.5] : [-1.5, -0.5, 0.5, 1.5];
     const pw = baby ? 2.6 : 3;
-    ks.forEach(k => ellF(body, hx + k * pw, skirtTop + skirtH * 0.55, pw * 0.95, skirtH * 0.55, -k * 0.3, sh(T.dress2)));
-    kf.forEach(k => ellF(body, hx + k * pw * 1.05, skirtTop + skirtH * 0.42, pw * 0.9, skirtH * 0.5, -k * 0.28, sh(T.dress)));
-    // corpete
+    ks.forEach(k => ellF(body, bx + k * pw, skirtTop + skirtH * 0.55, pw * 0.95, skirtH * 0.55, -k * 0.3, sh(T.dress2)));
+    kf.forEach(k => ellF(body, bx + k * pw * 1.05, skirtTop + skirtH * 0.42, pw * 0.9, skirtH * 0.5, -k * 0.28, sh(T.dress)));
     if (!baby) {
-      ellF(body, hx, ty + 2.5, 4.2, 3.6, 0, sh(T.dress));
-      ball(body, hx - 4.5, ty + 1.5, 2, T.dress); ball(body, hx + 4.5, ty + 1.5, 2, T.dress);
-      ellF(body, hx - 2.5, ty, 2, 1.2, -0.4, T.dress[0]); ellF(body, hx + 2.5, ty, 2, 1.2, 0.4, T.dress[0]);
+      ellF(body, bx, ty + 2.5, 4.2, 3.6, 0, sh(T.dress));
+      ball(body, bx - 4.5, ty + 1.5, 2, T.dress); ball(body, bx + 4.5, ty + 1.5, 2, T.dress);
+      ellF(body, bx - 2.5, ty, 2, 1.2, -0.4, T.dress[0]); ellF(body, bx + 2.5, ty, 2, 1.2, 0.4, T.dress[0]);
     }
-    rect(body, hx - (baby ? 3 : 4), skirtTop - 1, baby ? 7 : 9, 1, T.gold[1]); ball(body, hx, skirtTop - 1, 1, T.gold);
+    rect(body, bx - (baby ? 3 : 4), skirtTop - 1, baby ? 7 : 9, 1, T.gold[1]); ball(body, bx, skirtTop - 1, 1, T.gold);
 
-    // braços e varinha
+    // braços
+    const shY = baby ? skirtTop + 1 : ty + 2, shL = bx - (baby ? 4 : 5), shR = bx + (baby ? 4 : 5);
+    const hand = (x, y) => ball(body, x, y, baby ? 1.1 : 1.3, T.skin);
+    const arm = (pts) => { for (let i = 1; i < pts.length; i++) line(body, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], T.skin[1], 2); hand(...pts[pts.length - 1]); };
     let starPos = null;
-    if (!baby) {
-      line(body, hx + 8, ty + 10, hx + 13, ty - 3, T.stem[1]); line(body, hx + 9, ty + 10, hx + 14, ty - 3, T.stem[2]);
-      starPos = [hx + 14, ty - 6];
+    const front = [];                       // braços erguidos são desenhados por cima da cabeça
+    const later = (raised, fn) => raised ? front.push(fn) : fn();
+    // braço direito (segura a varinha)
+    if (armR === 'wand') later(false, () => {
+      line(body, bx + 8, ty + 10, bx + 13, ty - 3, T.stem[1]); line(body, bx + 9, ty + 10, bx + 14, ty - 3, T.stem[2]);
+      starPos = [bx + 14, ty - 6];
       star(body, starPos[0], starPos[1], 3.8, T.gold, Math.sin(t * 0.004) * 0.3);
-      line(body, hx - 5, ty + 2, hx - 8, ty + 8, T.skin[1], 2); ball(body, hx - 7.5, ty + 9.5, 1.3, T.skin);
-      line(body, hx + 5, ty + 2, hx + 8, ty + 6, T.skin[1], 2); ball(body, hx + 9, ty + 7.5, 1.4, T.skin);
+      arm([[shR, shY], [bx + 9, ty + 7.5]]);
+    });
+    else if (armR === 'up') later(true, () => {
+      const hxr = bx + 12, hyr = hy - 4;
+      line(body, hxr, hyr, hxr + 2, hyr - 9, T.stem[1]); line(body, hxr + 1, hyr, hxr + 3, hyr - 9, T.stem[2]);
+      starPos = [hxr + 3, hyr - 12];
+      star(body, starPos[0], starPos[1], 3.8, T.gold, Math.sin(t * 0.004) * 0.3);
+      arm([[shR, shY], [bx + 9, hy + 4], [hxr, hyr]]);
+    });
+    else if (baby) {
+      if (armL === 'up') later(true, () => arm([[shR, shY], [bx + 10, skirtTop - 9]]));
+      else arm([[shR, shY], [bx + 7, skirtTop + 4]]);
+    }
+    // braço esquerdo (o livre: acena, espreguiça, segura a barriga, cobre o bocejo)
+    const wv = Math.sin(t * 0.018) * 2.5;
+    if (baby) {
+      if (armL === 'wave') later(true, () => arm([[shL, shY], [bx - 9, skirtTop - 2], [bx - 11 + wv, skirtTop - 9]]));
+      else if (armL === 'up') later(true, () => arm([[shL, shY], [bx - 10, skirtTop - 9]]));
+      else if (armL === 'belly') arm([[shL, shY], [bx - 1, skirtTop + 2]]);
+      else if (armL !== 'mouth') arm([[shL, shY], [bx - 7, skirtTop + 4]]);
     } else {
-      line(body, hx - 4, skirtTop + 1, hx - 7, skirtTop + 4, T.skin[1], 2);
-      line(body, hx + 4, skirtTop + 1, hx + 7, skirtTop + 4, T.skin[1], 2);
+      if (armL === 'wave') later(true, () => arm([[shL, shY], [bx - 11, ty - 1], [bx - 13 + wv, ty - 9]]));
+      else if (armL === 'up') later(true, () => arm([[shL, shY], [bx - 9, hy + 4], [bx - 12, hy - 4]]));
+      else if (armL === 'belly') arm([[shL, shY], [bx - 6, ty + 5], [bx - 2, ty + 4.5]]);
+      else if (armL !== 'mouth') arm([[shL, shY], [bx - 8, ty + 8], [bx - 7.5, ty + 9.5]]);
     }
 
-    // orelhas pontudas
+    // orelhas pontudas (a de trás some quando ela vira)
     const earY = hy + 1;
-    poly(body, [[hx - R + 1, earY - 2], [hx - R - 5, earY - 6], [hx - R + 1, earY + 3]], T.skin[1]);
-    poly(body, [[hx + R - 1, earY - 2], [hx + R + 5, earY - 6], [hx + R - 1, earY + 3]], T.skin[2]);
+    if (fc < 0.55) poly(body, [[hx - R + 1, earY - 2], [hx - R - 5, earY - 6], [hx - R + 1, earY + 3]], T.skin[1]);
+    if (fc > -0.55) poly(body, [[hx + R - 1, earY - 2], [hx + R + 5, earY - 6], [hx + R - 1, earY + 3]], T.skin[2]);
     if (!baby) rect(body, hx - 1, hy + R - 1, 3, 2, T.skin[2]);
 
     // cabeça
     ellF(body, hx, hy, R + 0.4, R, 0, sh(T.skin));
-    // franja com mechas e brilho
     for (let dy = -R - 1; dy <= R; dy++) for (let dx = -R - 1; dx <= R + 1; dx++) {
       const u = dx / (R + 0.4), v = dy / R;
       if (u * u + v * v > 1.02) continue;
-      const zig = Math.abs(((dx + 60) % 5) - 2) * 0.9;
+      const zig = Math.abs(((dx - fo + 60) % 5) - 2) * 0.9;
       const lim = -R * 0.25 + zig - 1 + (Math.abs(u) > 0.72 ? R * 0.9 : 0);
       if (dy > lim) continue;
       let c = sh(T.hair)(u, v);
-      const ring = u * u + (v + 0.2) ** 2;
+      const ring = (u + fc * 0.2) ** 2 + (v + 0.2) ** 2;
       if (ring > 0.42 && ring < 0.56 && u < 0.25 && v < -0.35) c = T.hair[0];
       P(body, hx + dx, hy + dy, c);
     }
-    if (!baby) { // presilha de flor
-      const fxp = hx - R + 2, fyp = hy - R + 3;
+    if (!baby) {
+      const fxp = hx - R + 2 - Math.max(0, fo), fyp = hy - R + 3;
       ball(body, fxp - 1.5, fyp, 1.3, T.porc); ball(body, fxp + 1.5, fyp, 1.3, T.porc); ball(body, fxp, fyp - 1.5, 1.3, T.porc); ball(body, fxp, fyp + 1.5, 1.3, T.porc);
       P(body, fxp, fyp, T.gold[1]);
     }
@@ -973,43 +1103,61 @@ const ColorRenderer = (() => {
     // olhos
     const ey = hy + (baby ? 1 : 0), eyeH = baby ? 7 : 6;
     const IR = [0x4a2f8a, 0x5f40b0, 0x7b5cd6, 0x9a7ce8, 0xbca2f8, 0xd6c6ff];
-    [hx - 6, hx + 3].forEach((ex, i) => {
-      const outer = i === 0 ? ex - 1 : ex + 4;
-      if (face === 'sleep' || blink) {
-        P(body, ex, ey + 3, DARK); P(body, ex + 1, ey + 4, DARK); P(body, ex + 2, ey + 4, DARK); P(body, ex + 3, ey + 3, DARK); P(body, outer, ey + 2, DARK);
+    const closed = face === 'sleep' || face === 'yawn' || blink;
+    const lid = face === 'tired' ? 2 : face === 'bored' ? 2 : 0;
+    [hx - 6 + fo, hx + 3 + fo].forEach((ex, i) => {
+      const far = (i === 1 && fc > 0.55) || (i === 0 && fc < -0.55);
+      const c0 = far && i === 0 ? 1 : 0, c1 = far && i === 1 ? 2 : 3;
+      const outer = i === 0 ? ex + c0 - 1 : ex + c1 + 1;
+      if (closed) {
+        P(body, ex + c0, ey + 3, DARK); for (let c = c0 + 1; c < c1; c++) P(body, ex + c, ey + 4, DARK); P(body, ex + c1, ey + 3, DARK);
+        if (!far) P(body, outer, ey + 2, DARK);
+        if (face === 'yawn' && i === 0) P(body, ex - 1, ey + 5, 0x9fdcff);
       } else if (face === 'happy') {
-        P(body, ex, ey + 4, DARK); P(body, ex + 1, ey + 3, DARK); P(body, ex + 2, ey + 3, DARK); P(body, ex + 3, ey + 4, DARK);
+        P(body, ex + c0, ey + 4, DARK); for (let c = c0 + 1; c < c1; c++) P(body, ex + c, ey + 3, DARK); P(body, ex + c1, ey + 4, DARK);
       } else {
-        for (let r = 0; r < eyeH; r++) for (let c = 0; c < 4; c++) {
-          if (r === eyeH - 1 && (c === 0 || c === 3)) continue;
-          let col = r === 0 ? DARK : IR[Math.min(IR.length - 1, r - 1)];
-          if (r >= 2 && r <= 3 && (c === 1 || c === 2)) col = 0x231543;
+        for (let r = lid; r < eyeH; r++) for (let c = c0; c <= c1; c++) {
+          if (r === eyeH - 1 && (c === c0 || c === c1)) continue;
+          let col = r === lid ? DARK : IR[Math.min(IR.length - 1, r - 1)];
+          if (r > lid && r >= 2 && r <= 3 && (c === 1 || c === 2)) col = 0x231543;
           P(body, ex + c, ey + r, col);
         }
-        P(body, ex, ey + 1, 0xffffff); P(body, ex + 1, ey + 1, 0xffffff); P(body, ex, ey + 2, 0xffffff);
-        P(body, ex + 3, ey + eyeH - 2, 0xffffff);
-        P(body, outer, ey, DARK); P(body, outer + (i ? 1 : -1), ey - 1, DARK);
+        const hr = Math.max(1, lid + 1);
+        P(body, ex + c0, ey + hr, 0xffffff); if (!lid) { P(body, ex + c0 + 1, ey + hr, 0xffffff); P(body, ex + c0, ey + hr + 1, 0xffffff); }
+        P(body, ex + c1, ey + eyeH - 2, 0xffffff);
+        if (!far) { P(body, outer, ey + lid, DARK); if (!lid) P(body, outer + (i ? 1 : -1), ey - 1, DARK); }
         if (face === 'sad') {
           (i === 0 ? [ex + 2, ex + 3] : [ex, ex + 1]).forEach(x => P(body, x, ey - 3, T.hair[3]));
           (i === 0 ? [ex, ex + 1] : [ex + 2, ex + 3]).forEach(x => P(body, x, ey - 2, T.hair[3]));
         }
       }
     });
-    if (face === 'sad') P(body, hx - 5, ey + eyeH + 1 + Math.floor(t / 250) % 3, 0x7cc8ff);
+    if (face === 'sad') P(body, hx - 5 + fo, ey + eyeH + 1 + Math.floor(t / 250) % 3, 0x7cc8ff);
+
     // nariz, bochechas, boca
-    P(body, hx, hy + (baby ? 6 : 4), T.skin[2]);
+    const mx = hx + fo;
+    P(body, mx + (fc > 0.3 ? 1 : fc < -0.3 ? -1 : 0), hy + (baby ? 6 : 4), T.skin[2]);
     const by = hy + (baby ? 7 : 5);
-    [hx - 8, hx + 6].forEach(bx => { P(body, bx, by, 0xffb6c6); P(body, bx + 1, by, 0xff9db5); P(body, bx + 2, by, 0xffb6c6); });
+    [hx - 8 + fo, hx + 6 + fo].forEach(bxx => { P(body, bxx, by, 0xffb6c6); P(body, bxx + 1, by, 0xff9db5); P(body, bxx + 2, by, 0xffb6c6); });
     const my = hy + (baby ? 8 : 6), M = 0xb8405e, MI = 0xff8fa8;
-    if (face === 'happy') { for (let x = -2; x <= 2; x++) P(body, hx + x, my, M); for (let x = -1; x <= 1; x++) P(body, hx + x, my + 1, MI); }
-    else if (face === 'sad') { P(body, hx - 2, my + 1, M); P(body, hx + 2, my + 1, M); for (let x = -1; x <= 1; x++) P(body, hx + x, my, M); }
-    else if (face === 'sleep') P(body, hx, my, MI);
-    else { P(body, hx - 2, my - 1, M); P(body, hx + 2, my - 1, M); for (let x = -1; x <= 1; x++) P(body, hx + x, my, M); }
+    if (face === 'happy') { for (let x = -2; x <= 2; x++) P(body, mx + x, my, M); for (let x = -1; x <= 1; x++) P(body, mx + x, my + 1, MI); }
+    else if (face === 'sad') { P(body, mx - 2, my + 1, M); P(body, mx + 2, my + 1, M); for (let x = -1; x <= 1; x++) P(body, mx + x, my, M); }
+    else if (face === 'yawn') ellF(body, mx, my + 0.5, 1.8, 2, 0, (u, v) => u * u + v * v > 0.45 ? M : 0x7a1f3a);
+    else if (face === 'sleep' || face === 'tired') P(body, mx, my, MI);
+    else if (face === 'bored') for (let x = -1; x <= 1; x++) P(body, mx + x, my, M);
+    else { P(body, mx - 2, my - 1, M); P(body, mx + 2, my - 1, M); for (let x = -1; x <= 1; x++) P(body, mx + x, my, M); }
+
+    front.forEach(fn => fn());
+    // mão na frente da boca (bocejo)
+    if (armL === 'mouth') {
+      if (baby) arm([[shL, shY], [mx - 4, my + 1]]);
+      else arm([[shL, shY], [bx - 9, ty - 1], [mx - 4, my + 1]]);
+    }
 
     selout(wing, .5); selout(body, .62);
     return {
-      hx, hy, F, top: hy - R - (baby ? 4 : 7), cy: Math.round((hy + F) / 2),
-      side: hx + 30 <= W - 6 ? hx + 22 : hx - 22, star: starPos,
+      hx: bx, hy, F, top: hy - R - (baby ? 4 : 7), cy: Math.round((hy + F) / 2),
+      side: bx + 30 <= W - 6 ? bx + 22 : bx - 22, star: starPos,
     };
   }
 
@@ -1168,7 +1316,7 @@ const ColorRenderer = (() => {
   const layer = fn => { fx.fill(0); fn(fx); selout(fx, .55); comp(main, fx); };
   const triUp = (B, cx, cy, s, c) => poly(B, [[cx, cy - s], [cx - s, cy + s * 0.4], [cx + s, cy + s * 0.4]], c);
 
-  function draw(s, ui, now) {
+  function draw(s, ui, now, pose) {
     const t = now;
     const anim = ui.anim && now - ui.anim.t0 < ui.anim.dur ? ui.anim : null;
     const prog = anim ? (now - anim.t0) / anim.dur : 0;
@@ -1229,19 +1377,20 @@ const ColorRenderer = (() => {
     }
 
     const baby = s.stage === 'baby', half = baby ? 15 : 19;
-    let face = faceFor(s, anim), hx;
-    let F = s.asleep ? GROUND - 3 : (baby ? 93 : 92);
-    const bob = s.asleep ? 0 : Math.round(Math.sin(t * 0.004) * 2);
+    let face = faceFor(s, anim, ui.view === 'game' ? null : pose), hx;
+    const sp = pose.sleepP || 0, awakeF = baby ? 93 : 92;
+    const F = Math.round(awakeF + (GROUND - 3 - awakeF) * sp - (ui.view === 'game' ? 0 : pose.lift || 0));
+    const bob = Math.round(Math.sin(t * 0.004) * 2 * (1 - sp));
     if (ui.view === 'game') {
       const g = ui.game;
       if (g.phase === 'ask') { hx = 96; face = 'neutral'; }
       else { hx = g.dir === 'L' ? 36 : 156; face = g.guess === g.dir ? 'happy' : 'sad'; }
     } else {
       const minX = 54, maxX = Math.max(minX, W - half - 4 - s.poops * 16);
-      hx = minX + ui.px * (maxX - minX);
+      hx = minX + pose.x * (maxX - minX) + (pose.shake || 0);
       if (anim && anim.type === 'refuse') hx += Math.floor(t / 90) % 2 ? 1 : -1;
     }
-    const f = fairy(s.stage, hx, F + bob, face, t, blink && face !== 'happy' && face !== 'sleep');
+    const f = fairy(s.stage, hx, F + bob, face, t, blink && !['happy', 'sleep', 'yawn'].includes(face), ui.view === 'game' ? { wing: pose.wing } : pose);
 
     shadowAt(f.hx, Math.max(4, 11 - (GROUND - f.F) * 0.6), .3);
     if (s.lightsOff) { tint(main, 0x080620, .62); glow(main, f.hx, f.cy, 32, 0xfff1b0, .45); }
@@ -1250,6 +1399,10 @@ const ColorRenderer = (() => {
     comp(main, wing, .72);
     comp(main, body);
     stepDust(t, f, !s.asleep);
+    if (pose.trail && ui.view === 'main') {
+      glow(main, f.hx, f.cy, 26, 0xfff3b0, .2);
+      layer(B => { for (let i = 0; i < 4; i++) { const a = t * 0.012 + i * Math.PI / 2; star(B, f.hx + Math.cos(a) * 20, f.cy + Math.sin(a) * 9, 2.4, T.gold, a); } });
+    }
 
     if (ui.view === 'game') {
       const g = ui.game;
@@ -1271,7 +1424,7 @@ const ColorRenderer = (() => {
       layer(B => cloud(B, f.hx, f.top - 7, 0.55, T.gray));
       for (let i = 0; i < 5; i++) { const x = f.hx - 6 + i * 3, y = f.top - 3 + ((Math.floor(t / 120) + i * 2) % 5); P(main, x, y, 0x5aa9e6); P(main, x, y + 1, 0x7fc4f0); }
     }
-    if (s.asleep) layer(B => { for (let i = 0; i < 3; i++) { const p = ((t * 0.0005) + i / 3) % 1; zz(B, f.hx + 12 + p * 12, f.top + 4 - p * 20); } });
+    if (s.asleep && sp >= 1) layer(B => { for (let i = 0; i < 3; i++) { const p = ((t * 0.0005) + i / 3) % 1; zz(B, f.hx + 12 + p * 12, f.top + 4 - p * 20); } });
 
     if (anim) {
       const ty = anim.type;
@@ -1343,7 +1496,7 @@ const BAR_DEF = [
 ];
 
 let s, R;
-const ui = { view: 'main', sel: -1, page: 0, foodIdx: 0, game: null, anim: null, px: 0.5, target: 0.5, nextWander: 0, msg: '', msgUntil: 0, lastAlert: false, confirmReset: false };
+const ui = { view: 'main', sel: -1, page: 0, foodIdx: 0, game: null, anim: null, msg: '', msgUntil: 0, lastAlert: false, confirmReset: false };
 const $ = id => document.getElementById(id);
 
 function load() {
@@ -1452,6 +1605,7 @@ function gameTick(now) {
     s.fun = cl(s.fun + 10 + wins * 8); s.energy = cl(s.energy - 6); s.hunger = cl(s.hunger - 4);
     ui.view = 'main'; ui.game = null;
     anim(wins >= 3 ? 'win' : 'lose', 2500);
+    if (wins >= 3) setTimeout(() => Behavior.play('spin'), 2500);
     say(wins >= 3 ? `${wins} de 5! ${s.name} se divertiu muito.` : `${wins} de 5. Mesmo assim foi divertido.`);
     logEv(`Brincaram de adivinhar: ${wins} de 5.`);
   } else { g.phase = 'ask'; say('De novo! Pra que lado?', 60000); }
@@ -1610,7 +1764,7 @@ function restart() {
   const keep = { speed: s.speed, sound: s.sound, skin: s.skin };
   s = Object.assign(newState(), keep);
   logEv('Um novo botão de flor foi plantado.');
-  ui.view = 'main'; ui.sel = -1; ui.anim = null; ui.px = 0.5;
+  ui.view = 'main'; ui.sel = -1; ui.anim = null; Behavior.reset(s);
   save(); render();
 }
 function setSkin() {
@@ -1625,13 +1779,9 @@ function frame(now) {
   const realDt = Math.min(5000, now - lastTick); lastTick = now;
   Core.advance(s, realDt / MIN * s.speed);
 
-  if (ui.view === 'main' && !s.asleep && s.stage !== 'bud' && !s.gone && (!ui.anim || now - ui.anim.t0 > ui.anim.dur)) {
-    if (now > ui.nextWander) { ui.target = Math.random(); ui.nextWander = now + 1800 + Math.random() * 2800; }
-    const d = ui.target - ui.px;
-    ui.px += Math.sign(d) * Math.min(Math.abs(d), realDt * 0.00022);
-  }
   if (ui.view === 'game') gameTick(now);
-  R.draw(s, ui, now);
+  const pose = Behavior.update(s, ui, now, realDt);
+  R.draw(s, ui, now, pose);
   frame.acc = (frame.acc || 0) + realDt;
   if (frame.acc > 500) { frame.acc = 0; render(); }
   requestAnimationFrame(frame);
@@ -1650,6 +1800,11 @@ function start(snap) {
 
   $('bA').onclick = pressA; $('bB').onclick = pressB; $('bC').onclick = pressC;
   $('screen').addEventListener('click', e => {
+    if (ui.view === 'main' && !s.gone && !s.asleep && s.stage !== 'bud' && !Behavior.state.act) {
+      const happy = Core.mood(s) === 'happy';
+      Behavior.play(happy ? 'spin' : 'giggle'); say(happy ? 'Wiii! Uma pirueta!' : 'Hihi! Cócegas!', 2500); beep(1320, .05, 2);
+      return;
+    }
     if (ui.view !== 'game') return;
     const r = e.currentTarget.getBoundingClientRect();
     gameGuess(e.clientX - r.left < r.width / 2 ? 'L' : 'R');
