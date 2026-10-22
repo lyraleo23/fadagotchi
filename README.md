@@ -6,9 +6,9 @@ Bichinho virtual no estilo Tamagotchi: uma fada (pixie) que precisa de comida, c
 
 Abra `index.html` no navegador. Não precisa de build nem dependências.
 
-- **A** escolhe o ícone · **B** confirma · **C** volta (ou toque direto nos ícones)
+- **◀ ▶** escolhem (ícone, comida, página de status, lado no minijogo) · **✓** confirma · **✕** cancela/volta (ou toque direto nos ícones)
 - Toque na fada pra ela dar uma pirueta ou rir de cócegas
-- Teclado: `A`/`←`, `B`/`Enter`, `C`/`Esc`/`→`
+- Teclado: `←` `→`, `Enter`/`Espaço` confirma, `Esc`/`Backspace` cancela
 - O tempo passa em tempo real, inclusive com a página fechada (até 3 dias). O progresso fica salvo no `localStorage` do navegador.
 - Em **Ajustes** dá pra acelerar o tempo (até 600×) e trocar o visual entre **Colorido** e **Clássico (LCD)**.
 
@@ -90,6 +90,7 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v0.5: World (mapa do cenário); dorme dentro da casinha (janela acesa/apagada), cheira flores, persegue borboletas, brinca com vaga-lumes
 - [x] v0.6: aparência sorteada ao nascer (8 cabelos, 5 tons de pele, 5 olhos, 6 vestidos, 5 asas) e editável na ficha
 - [x] v0.7: acessórios ganhos com bom cuidado (laço, colar, coroa, capa, tiara, asas cintilantes)
+- [x] v0.8: controles com 4 botões (◀ ▶ ✓ ✕)
 - [ ] Gráficos realistas
 
 ## Publicação

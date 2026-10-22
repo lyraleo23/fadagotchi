@@ -71,7 +71,8 @@ body {
     0 24px 50px rgba(0, 0, 0, .45);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px;
-  padding: 16% 10% 8%;
+  box-sizing: border-box;
+  padding: 19% 9% 9%;
 }
 .loop {
   position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
@@ -128,16 +129,40 @@ body {
 }
 .alert.on { animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 1; } }
-.btns { display: flex; gap: 26px; margin-top: 6px; }
+.btns { display: flex; justify-content: space-between; align-items: center; width: 92%; margin-top: 4px; }
+.pad {
+  display: flex; gap: 4px; padding: 4px; border-radius: 999px;
+  background: linear-gradient(180deg, var(--shell-lo), var(--shell-edge));
+  box-shadow: inset 0 2px 4px rgba(60, 30, 80, .35);
+}
 .btn {
-  appearance: none; border: 0; cursor: pointer;
-  width: 46px; height: 46px; border-radius: 50%;
+  appearance: none; border: 0; cursor: pointer; padding: 0;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
   background: radial-gradient(circle at 35% 30%, #f287b0, var(--btn) 55%, var(--btn-lo));
   box-shadow: 0 4px 0 var(--btn-lo), 0 6px 10px rgba(0, 0, 0, .3);
-  color: #fff; font-family: var(--f-display); font-size: 13px;
+  color: #fff;
 }
-.btn:nth-child(2) { transform: translateY(8px); }
+.btn svg { width: 20px; height: 20px; display: block; }
+.btn.arrow {
+  width: 46px; height: 40px;
+  background: radial-gradient(circle at 40% 30%, #fbf1f8, #e9d6ec 55%, #c7a6d2);
+  box-shadow: 0 3px 0 #9c78ad, 0 4px 6px rgba(0, 0, 0, .2);
+  color: var(--ink);
+}
+.btn.arrow:first-child { border-radius: 22px 8px 8px 22px; }
+.btn.arrow:last-child { border-radius: 8px 22px 22px 8px; }
+.btn.cancel {
+  width: 38px; height: 38px;
+  background: radial-gradient(circle at 35% 30%, #b9a2c8, #8a6f9e 55%, #5f4a72);
+  box-shadow: 0 3px 0 #4a3a5a, 0 5px 8px rgba(0, 0, 0, .3);
+}
+.btn.cancel svg { width: 16px; height: 16px; }
+.btn.ok { width: 50px; height: 50px; }
+.acts { display: flex; align-items: center; gap: 12px; }
 .btn:active { box-shadow: 0 1px 0 var(--btn-lo); translate: 0 3px; }
+.btn.arrow:active { box-shadow: 0 1px 0 #9c78ad; }
+.btn.cancel:active { box-shadow: 0 1px 0 #4a3a5a; }
 .btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
 
 .caption {
@@ -241,14 +266,19 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
         <div class="icons" id="iconsBottom"></div>
       </div>
       <div class="btns">
-        <button class="btn" id="bA" aria-label="Botão A: escolher">A</button>
-        <button class="btn" id="bB" aria-label="Botão B: confirmar">B</button>
-        <button class="btn" id="bC" aria-label="Botão C: voltar">C</button>
+        <div class="pad">
+          <button class="btn arrow" id="bL" aria-label="Seta para a esquerda"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4 6 10l7 6z" fill="currentColor"/></svg></button>
+          <button class="btn arrow" id="bR" aria-label="Seta para a direita"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 7 6-7 6z" fill="currentColor"/></svg></button>
+        </div>
+        <div class="acts">
+          <button class="btn cancel" id="bX" aria-label="Cancelar"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+          <button class="btn ok" id="bOK" aria-label="Confirmar"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10.5 4 4 8-9" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
       </div>
     </div>
     <p class="caption" id="caption" aria-live="polite"></p>
     <div class="choices" id="choices" hidden></div>
-    <p class="hint"><kbd>A</kbd> escolhe · <kbd>B</kbd> confirma · <kbd>C</kbd> volta. Toque nos ícones ou na própria fada.</p>
+    <p class="hint"><kbd>◀</kbd> <kbd>▶</kbd> escolhem · <kbd>✓</kbd> confirma · <kbd>✕</kbd> cancela. Também dá pra tocar nos ícones e na fada.</p>
   </section>
 
   <aside class="panel" aria-label="Ficha da fada">
@@ -310,7 +340,7 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 
 <script>
 /* =====================================================================
-   FADAGOTCHI — v0.7
+   FADAGOTCHI — v0.8
    Arquitetura:
      1. Sprites   — pixel art (LCD monocromático + itens coloridos)
      2. Core      — estado + regras da simulação (não sabe nada de tela)
@@ -1861,7 +1891,7 @@ function act(id) {
       if (s.sick) { refuse(`${n} está doente demais pra brincar.`); break; }
       if (s.energy < 15) { refuse(`${n} está cansada demais pra brincar.`); break; }
       ui.view = 'game'; ui.game = { phase: 'ask', results: [], guess: null, dir: null, t0: 0 };
-      say('Pra que lado ela vai voar? A = esquerda, C = direita.', 60000); break;
+      say('Pra que lado ela vai voar? Use ◀ ou ▶.', 60000); break;
     case 'toilet':
       if (s.bladder < 30) { refuse('Não estou com vontade agora.'); break; }
       s.bladder = 0; s.affection = cl(s.affection + 4);
@@ -1879,7 +1909,7 @@ function act(id) {
       if (!s.sick) { refuse(`${n} não está doente. Poção só quando precisar.`); break; }
       s.sick = false; s.health = cl(s.health + 20); s.fun = cl(s.fun - 5);
       anim('med', 2200); say('Poção tomada. Já está melhorando!'); logEv(`${n} tomou poção e sarou.`); break;
-    case 'status': ui.view = 'status'; ui.page = 0; say('A ou B passa a página. C volta.', 60000); break;
+    case 'status': ui.view = 'status'; ui.page = 0; say('◀ ▶ passam a página. ✓ ou ✕ fecha.', 60000); break;
   }
   render();
 }
@@ -1926,22 +1956,33 @@ function gameTick(now) {
   render();
 }
 
-function pressA() {
+function pressLeft() {
   beep(660, .03);
   if (ui.view === 'game') return gameGuess('L');
+  if (ui.view === 'food') { ui.foodIdx = 1 - ui.foodIdx; return render(); }
+  if (ui.view === 'status') { ui.page = (ui.page + STATUS_PAGES.length - 1) % STATUS_PAGES.length; return render(); }
+  ui.sel = ui.sel <= 0 ? ACTS.length - 1 : ui.sel - 1; render();
+}
+function pressRight() {
+  beep(660, .03);
+  if (ui.view === 'game') return gameGuess('R');
   if (ui.view === 'food') { ui.foodIdx = 1 - ui.foodIdx; return render(); }
   if (ui.view === 'status') { ui.page = (ui.page + 1) % STATUS_PAGES.length; return render(); }
   ui.sel = (ui.sel + 1) % ACTS.length; render();
 }
-function pressB() {
+function pressOk() {
   if (ui.view === 'game') return;
   if (ui.view === 'food') return feed(ui.foodIdx === 0 ? 'meal' : 'candy');
-  if (ui.view === 'status') { ui.page = (ui.page + 1) % STATUS_PAGES.length; return render(); }
-  if (ui.sel >= 0) act(ACTS[ui.sel].id);
+  if (ui.view === 'status') { ui.view = 'main'; ui.msgUntil = 0; return render(); }
+  if (ui.sel >= 0) return act(ACTS[ui.sel].id);
+  beep(660, .03); ui.sel = 0; render();
 }
-function pressC() {
+function pressCancel() {
   beep(520, .03);
-  if (ui.view === 'game') return gameGuess('R');
+  if (ui.view === 'game') {
+    ui.view = 'main'; ui.game = null; say('Vocês pararam de brincar.');
+    return render();
+  }
   if (ui.view !== 'main') { ui.view = 'main'; ui.msgUntil = 0; return render(); }
   ui.sel = -1; render();
 }
@@ -2047,7 +2088,7 @@ function sectionLabel() {
   if (ui.view === 'status') { const p = STATUS_PAGES[ui.page]; return ['Status · ' + p.label, `${ui.page + 1}/${STATUS_PAGES.length}`]; }
   if (ui.view === 'game') return ['Brincar', `rodada ${Math.min(5, ui.game.results.length + (ui.game.phase === 'ask' ? 1 : 0))}/5`];
   if (ui.hover) return [ui.hover, ''];
-  if (ui.sel >= 0) return [ACTS[ui.sel].label, 'B confirma'];
+  if (ui.sel >= 0) return [ACTS[ui.sel].label, '✓ confirma'];
   return [s.name, hhmm(s.simTime)];
 }
 
@@ -2165,7 +2206,7 @@ function start(snap) {
   setSkin();
   buildPanel(); buildLooks(); renderReset();
 
-  $('bA').onclick = pressA; $('bB').onclick = pressB; $('bC').onclick = pressC;
+  $('bL').onclick = pressLeft; $('bR').onclick = pressRight; $('bOK').onclick = pressOk; $('bX').onclick = pressCancel;
   $('screen').addEventListener('click', e => {
     if (ui.view === 'main' && !s.gone && !s.asleep && s.stage !== 'bud' && !Behavior.state.act) {
       const happy = Core.mood(s) === 'happy';
@@ -2179,9 +2220,10 @@ function start(snap) {
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, select')) return;
     const k = e.key.toLowerCase();
-    if (k === 'a' || k === 'arrowleft') { e.preventDefault(); pressA(); }
-    else if (k === 'b' || k === 'enter' || k === ' ') { if (e.target.closest('button') && k !== 'b') return; e.preventDefault(); pressB(); }
-    else if (k === 'c' || k === 'escape' || k === 'arrowright') { e.preventDefault(); pressC(); }
+    if (k === 'arrowleft') { e.preventDefault(); pressLeft(); }
+    else if (k === 'arrowright') { e.preventDefault(); pressRight(); }
+    else if (k === 'enter' || k === ' ') { if (e.target.closest('button')) return; e.preventDefault(); pressOk(); }
+    else if (k === 'escape' || k === 'backspace') { e.preventDefault(); pressCancel(); }
   });
   $('nome').addEventListener('input', e => { s.name = e.target.value.trim() || 'Lumi'; save(); });
   $('speed').addEventListener('change', e => { s.speed = Number(e.target.value); save(); });
