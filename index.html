@@ -241,6 +241,7 @@ select, .ghost {
 }
 .ghost:hover, select:hover { border-color: var(--muted); }
 .ghost.danger { border-color: var(--crit); color: var(--crit); }
+label.inline .note { flex-basis: 100%; font-size: 12px; color: var(--muted); }
 label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); flex-wrap: wrap; }
 .gone { background: var(--dusk-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .gone p { margin: 0; }
@@ -331,6 +332,7 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
             <option value="60">60× (1 min = 1 h)</option>
             <option value="600">600× (teste)</option>
           </select>
+          <small class="note">Em 1× o relógio da fada é o do seu aparelho.</small>
         </label>
         <label class="inline" for="sound"><input type="checkbox" id="sound"> Som</label>
         <span id="resetWrap"></span>
@@ -341,7 +343,7 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 
 <script>
 /* =====================================================================
-   FADAGOTCHI — v0.9
+   FADAGOTCHI — v0.9.1
    Arquitetura:
      1. Sprites   — pixel art (LCD monocromático + itens coloridos)
      2. Core      — estado + regras da simulação (não sabe nada de tela)
@@ -508,7 +510,7 @@ const cl = v => Math.max(0, Math.min(100, v));
 function newState() {
   const now = Date.now();
   return {
-    v: 1, name: 'Lumi', stage: 'bud', ageMin: 0, simTime: now, lastReal: now,
+    v: 1, name: 'Lumi', stage: 'bud', ageMin: 0, simTime: now, simOffset: 0, lastReal: now,
     hunger: 80, affection: 70, fun: 70, bladder: 10, hygiene: 95, energy: 90, health: 100,
     sick: false, poops: 0, asleep: false, lightsOff: false, sweets: [],
     gone: false, speed: 1, sound: false, skin: 'smooth', skinV: 2, look: randomLook(), care: 0, unlocked: [], wear: {}, log: [],
@@ -2829,9 +2831,24 @@ function setSkin() {
 
 /* loop */
 let lastTick = performance.now();
+/* O relógio da fada segue o relógio real do aparelho (+ o adiantamento
+   acumulado nas velocidades de teste). Qualquer tempo que faltar — aba no
+   fundo, celular bloqueado, página fechada — é simulado de uma vez.     */
+function syncClock() {
+  const target = Date.now() + (s.simOffset || 0);
+  let gap = (target - s.simTime) / MIN;
+  if (gap <= 0) return;
+  const cap = 3 * 24 * 60;
+  if (gap > cap) { s.simTime = target - cap * MIN; gap = cap; }
+  if (gap < 1) return Core.advance(s, gap);
+  catchingUp = true; Core.advance(s, gap); catchingUp = false;
+  if (gap > 30) say(`Você ficou fora ${fmtAge(gap)}. Veja o diário.`, 7000);
+  render();
+}
 function frame(now) {
-  const realDt = Math.min(5000, now - lastTick); lastTick = now;
-  Core.advance(s, realDt / MIN * s.speed);
+  const realDt = Math.min(1000, Math.max(0, now - lastTick)); lastTick = now;
+  if (s.speed > 1) s.simOffset = (s.simOffset || 0) + realDt * (s.speed - 1);
+  syncClock();
 
   if (ui.view === 'game') gameTick(now);
   const pose = Behavior.update(s, ui, now, realDt);
@@ -2848,11 +2865,14 @@ function start(snap) {
     if (!s.look) s.look = { ...DEFAULT_LOOK };
     if (!s.skinV) { if (s.skin === 'color') s.skin = 'smooth'; s.skinV = 2; }
     s = Object.assign(newState(), s);
-    const away = Math.min(3 * 24 * 60, (Date.now() - s.lastReal) / MIN);
-    if (away > 1) { catchingUp = true; Core.advance(s, away); catchingUp = false; if (away > 30) say(`Você ficou fora ${fmtAge(away)}. Veja o diário.`, 7000); }
+    // relógio adiantado por testes: em 1× volta ao horário real; acima disso vira adiantamento
+    if (s.simTime > Date.now() + (s.simOffset || 0)) {
+      if (s.speed > 1) s.simOffset = s.simTime - Date.now(); else { s.simTime = Date.now(); s.simOffset = 0; }
+    }
   }
   setSkin();
   buildPanel(); buildLooks(); renderReset();
+  syncClock();
 
   $('bL').onclick = pressLeft; $('bR').onclick = pressRight; $('bOK').onclick = pressOk; $('bX').onclick = pressCancel;
   $('screen').addEventListener('click', e => {
@@ -2874,7 +2894,15 @@ function start(snap) {
     else if (k === 'escape' || k === 'backspace') { e.preventDefault(); pressCancel(); }
   });
   $('nome').addEventListener('input', e => { s.name = e.target.value.trim() || 'Lumi'; save(); });
-  $('speed').addEventListener('change', e => { s.speed = Number(e.target.value); save(); });
+  $('speed').addEventListener('change', e => {
+    s.speed = Number(e.target.value);
+    if (s.speed === 1 && (s.simOffset || s.simTime > Date.now())) {
+      s.simOffset = 0;
+      if (s.simTime > Date.now()) s.simTime = Date.now();
+      say('Relógio de volta ao horário real.');
+    }
+    save(); render();
+  });
   $('skin').addEventListener('change', e => { s.skin = e.target.value; setSkin(); save(); });
   $('sound').addEventListener('change', e => {
     s.sound = e.target.checked;
@@ -2884,7 +2912,7 @@ function start(snap) {
   });
   $('restart2').onclick = restart;
   setInterval(save, 5000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else syncClock(); });
   window.addEventListener('pagehide', save);
   window.claude?.hot?.snapshot?.(() => ({ state: s }));
   render();

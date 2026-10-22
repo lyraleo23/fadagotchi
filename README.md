@@ -9,7 +9,8 @@ Abra `index.html` no navegador. Não precisa de build nem dependências.
 - **◀ ▶** escolhem (ícone, comida, página de status, lado no minijogo) · **✓** confirma · **✕** cancela/volta (ou toque direto nos ícones)
 - Toque na fada pra ela dar uma pirueta ou rir de cócegas
 - Teclado: `←` `→`, `Enter`/`Espaço` confirma, `Esc`/`Backspace` cancela
-- O tempo passa em tempo real, inclusive com a página fechada (até 3 dias). O progresso fica salvo no `localStorage` do navegador.
+- O relógio da fada é o relógio do seu aparelho. O tempo passa de verdade, inclusive com a aba no fundo, o celular bloqueado ou a página fechada (até 3 dias são simulados de uma vez). O progresso fica salvo no `localStorage` do navegador.
+- As velocidades de teste adiantam o relógio; ao voltar para 1× ele volta ao horário real.
 - Em **Ajustes** dá pra acelerar o tempo (até 600×) e trocar o visual entre **Suave** (padrão), **Pixel art** e **Clássico (LCD)**.
 
 ## Acessórios
