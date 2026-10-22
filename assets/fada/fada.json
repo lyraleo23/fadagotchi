@@ -1,0 +1,53 @@
+{
+ "unitsPerPx": 0.1076923076923077,
+ "poses": {
+  "referencia": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
+  },
+  "acenando": {
+   "w": 178,
+   "h": 523,
+   "footX": 89.0,
+   "footY": 523
+  },
+  "espreguicando": {
+   "w": 164,
+   "h": 567,
+   "footX": 82.0,
+   "footY": 567
+  },
+  "fome": {
+   "w": 173,
+   "h": 523,
+   "footX": 86.5,
+   "footY": 523
+  },
+  "bocejo": {
+   "w": 174,
+   "h": 524,
+   "footX": 87.0,
+   "footY": 524
+  },
+  "cochilo": {
+   "w": 177,
+   "h": 517,
+   "footX": 88.5,
+   "footY": 517
+  },
+  "tedio": {
+   "w": 253,
+   "h": 385,
+   "footX": 126.5,
+   "footY": 385
+  },
+  "lado": {
+   "w": 295,
+   "h": 515,
+   "footX": 147.5,
+   "footY": 515
+  }
+ }
+}

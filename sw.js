@@ -1,12 +1,13 @@
 /* Service worker do Fadagotchi: guarda o app para funcionar offline.
    Ao publicar uma versão nova, suba VERSION (igual a js/version.js). */
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const CACHE = 'fadagotchi-' + VERSION;
 const FONTS = 'fadagotchi-fonts';
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/version.js', 'js/sprites.js', 'js/core.js', 'js/looks.js', 'js/accessories.js', 'js/world.js',
-  'js/behavior.js', 'js/faces.js', 'js/renderers/lcd.js', 'js/renderers/pixel.js', 'js/renderers/smooth.js', 'js/renderers/illustrated.js',
+  'js/behavior.js', 'js/faces.js', 'js/renderers/lcd.js', 'js/renderers/pixel.js', 'js/renderers/smooth.js', 'js/renderers/illustrated.js', 'js/renderers/painted.js',
+  'assets/fada/fada.json', 'assets/fada/referencia.webp', 'assets/fada/acenando.webp', 'assets/fada/espreguicando.webp', 'assets/fada/fome.webp', 'assets/fada/bocejo.webp', 'assets/fada/cochilo.webp', 'assets/fada/tedio.webp', 'assets/fada/lado.webp',
   'js/backup.js', 'js/app.js', 'js/ui.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-64.png',
 ];

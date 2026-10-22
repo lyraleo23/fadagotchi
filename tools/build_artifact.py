@@ -8,7 +8,7 @@ Uso: python3 tools/build_artifact.py SAIDA.html
 - remove doctype/html/head/body (o Claude coloca o esqueleto na publicação)
 - confere se APP_VERSION (js/version.js) == VERSION (sw.js)
 """
-import pathlib, re, sys
+import base64, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -27,6 +27,13 @@ def main(out):
     html = re.sub(r'<!-- pwa:start.*?<!-- pwa:end -->\n', '', html, flags=re.S)
     html = html.replace('<link rel="stylesheet" href="css/style.css">', '<style>\n' + read('css/style.css') + '</style>')
     html = re.sub(r'<script src="([^"]+)" defer></script>', lambda m: '<script>\n' + read(m.group(1)) + '</script>', html)
+    # arte pintada embutida (no Claude não dá para buscar arquivos ao lado)
+    fada = ROOT / 'assets' / 'fada' / 'fada.json'
+    if fada.exists():
+        meta = json.loads(fada.read_text(encoding='utf-8'))
+        imgs = {n: 'data:image/webp;base64,' + base64.b64encode((ROOT / 'assets' / 'fada' / f'{n}.webp').read_bytes()).decode() for n in meta['poses']}
+        inline = '<script>window.PAINTED_INLINE = ' + json.dumps({'meta': meta, 'imgs': imgs}) + ';</script>\n'
+        html = html.replace('<script>\n/* Versão do app', inline + '<script>\n/* Versão do app', 1)
     for tag in ['<!doctype html>\n', '<html lang="pt-BR">\n', '<head>\n', '<meta charset="utf-8">\n',
                 '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n',
                 '</head>\n', '<body>\n', '</body>\n', '</html>\n']:

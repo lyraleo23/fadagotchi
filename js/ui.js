@@ -358,9 +358,9 @@ function restart() {
   save(); renderLooks(); render();
 }
 function setSkin() {
-  R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : s.skin === 'smooth' ? SmoothRenderer : IllustratedRenderer;
+  R = s.skin === 'lcd' ? LcdRenderer : s.skin === 'color' ? ColorRenderer : s.skin === 'smooth' ? SmoothRenderer : s.skin === 'painted' ? PaintedRenderer : IllustratedRenderer;
   R.init($('lcd'));
-  $('lcd').style.imageRendering = R === SmoothRenderer || R === IllustratedRenderer ? 'auto' : 'pixelated';
+  $('lcd').style.imageRendering = R === SmoothRenderer || R === IllustratedRenderer || R === PaintedRenderer ? 'auto' : 'pixelated';
   $('screen').style.background = s.skin === 'lcd' ? '#a9b897' : '#1d2350';
 }
 

@@ -9,7 +9,7 @@
    Telas de Status/Comida e itens de efeito vêm do SmoothRenderer (mesmo canvas). */
 const IllustratedRenderer = (() => {
   const W = 192, H = 120, GROUND = 100, BGS = 2;
-  let S = 6, ctx, fx, fcv, bg, bgx, K, scen, scx, scenAt = 0, scenKey = '';
+  let S = 6, ctx, fx, fcv, bg, bgx, K, scen, scx, scenAt = 0, scenKey = '', fairyOverride = null;
   const midCache = {};
   const DARK = 0x1e1228;
 
@@ -231,6 +231,20 @@ const IllustratedRenderer = (() => {
     g.restore(); g.globalAlpha = 1;
   }
 
+  // par de asas batendo (também usado pelo visual Pintado)
+  function wings(g, bx, wy, pose, t, ws = 1) {
+    const fc = Math.max(-1, Math.min(1, pose.facing || 0)), folded = (pose.sleepP || 0) > 0.6;
+    const flap = folded ? 0 : Math.sin(pose.wing ?? t * 0.014);
+    const sL = 1 + (fc > 0 ? 0.12 : 0.3) * fc, sR = 1 - (fc < 0 ? 0.12 : 0.3) * fc;
+    [[-1, sL], [1, sR]].forEach(([sd, k]) => {
+      if (folded) { wing(g, bx, wy, sd, 0.95, 11, 3.2, k * ws, t, .7); wing(g, bx, wy, sd, 1.3, 15, 4, k * ws, t, .75); return; }
+      const up = 0.55 + 0.45 * flap, lo = -0.55 + 0.2 * flap;
+      wing(g, bx, wy + 1, sd, lo, 12, 4.6, k * ws, t, .78);
+      if (Math.abs(Math.cos(pose.wing ?? 0)) > 0.6) wing(g, bx, wy, sd, up + 0.22 * Math.sign(Math.cos(pose.wing ?? 0)), 19, 7.5, k * ws, t, .18);
+      wing(g, bx, wy, sd, up, 19, 7.5, k * ws, t, .8);
+    });
+  }
+
   function fairy(g, stage, cx, F, face, t, blink, pose, light) {
     const baby = stage === 'baby';
     const fc = Math.max(-1, Math.min(1, pose.facing || 0)), fo = fc * 2.2;
@@ -246,16 +260,7 @@ const IllustratedRenderer = (() => {
     const R = G_.hr;
 
     // asas (atrás de tudo)
-    const flap = folded ? 0 : Math.sin(pose.wing ?? t * 0.014), ws = baby ? 0.7 : 1;
-    const sL = 1 + (fc > 0 ? 0.12 : 0.3) * fc, sR = 1 - (fc < 0 ? 0.12 : 0.3) * fc;
-    const wy = sh + (baby ? 1 : 2.5);
-    [[-1, sL], [1, sR]].forEach(([sd, k]) => {
-      if (folded) { wing(g, bx, wy, sd, 0.95, 11, 3.2, k * ws, t, .7); wing(g, bx, wy, sd, 1.3, 15, 4, k * ws, t, .75); return; }
-      const up = 0.55 + 0.45 * flap, lo = -0.55 + 0.2 * flap;
-      wing(g, bx, wy + 1, sd, lo, 12, 4.6, k * ws, t, .78);
-      if (Math.abs(Math.cos(pose.wing ?? 0)) > 0.6) wing(g, bx, wy, sd, up + 0.22 * Math.sign(Math.cos(pose.wing ?? 0)), 19, 7.5, k * ws, t, .18);
-      wing(g, bx, wy, sd, up, 19, 7.5, k * ws, t, .8);
-    });
+    wings(g, bx, sh + (baby ? 1 : 2.5), pose, t, baby ? 0.7 : 1);
 
     // capa
     if (WEAR.back === 'capa') for (let k = -2; k <= 2; k++) petal(g, bx + k * 2.2 - fo * 0.4, sh - 0.5, F - sh - 2, 3.6, -k * 0.2, CAPE, .92);
@@ -653,7 +658,8 @@ const IllustratedRenderer = (() => {
 
     const bx0 = Math.max(0, Math.floor((hx - 36) * S)), by0 = Math.max(0, Math.floor((fy - 66) * S)), bx1 = Math.min(fcv.width, Math.ceil((hx + 36) * S)), by1 = Math.min(fcv.height, Math.ceil((fy + 4) * S));
     fx.setTransform(1, 0, 0, 1, 0, 0); fx.clearRect(bx0, by0, bx1 - bx0, by1 - by0); fx.setTransform(S, 0, 0, S, 0, 0);
-    const f = fairy(fx, s.stage, hx, fy, face, t, blink && !['happy', 'sleep', 'yawn'].includes(face), ui.view === 'game' ? { wing: pose.wing } : pose, light);
+    const fArgs = [fx, s.stage, hx, fy, face, t, blink && !['happy', 'sleep', 'yawn'].includes(face), ui.view === 'game' ? { wing: pose.wing } : pose, light];
+    const f = (fairyOverride && fairyOverride(...fArgs)) || fairy(...fArgs);
     lightLayer(f, light, sunX);
     glowAdd(ctx, f.hx, f.cy, 26, ph === 'night' ? 0xc8d4ff : 0xfff6d8, s.lightsOff ? .28 : .14);
     if (bx1 > bx0 && by1 > by0) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(fcv, bx0, by0, bx1 - bx0, by1 - by0, bx0, by0, bx1 - bx0, by1 - by0); ctx.restore(); }
@@ -728,5 +734,8 @@ const IllustratedRenderer = (() => {
       bg = document.createElement('canvas'); bg.width = W * BGS; bg.height = H * BGS; bgx = bg.getContext('2d');
     },
     draw,
+    // ganchos para outros visuais que só trocam a fada (ex.: Pintado)
+    setFairy(fn) { fairyOverride = fn; },
+    wings: (g, bx, wy, pose, t, ws) => { applyLook(lookOf(s)); wings(g, bx, wy, pose, t, ws); },
   };
 })();

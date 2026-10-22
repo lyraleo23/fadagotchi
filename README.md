@@ -24,7 +24,7 @@ O progresso fica guardado no aparelho. Em **Backup da fada**: **Copiar código**
 - Teclado: `←` `→`, `Enter`/`Espaço` confirma, `Esc`/`Backspace` cancela
 - O relógio da fada é o relógio do seu aparelho. O tempo passa de verdade, inclusive com a aba no fundo, o celular bloqueado ou a página fechada (até 3 dias são simulados de uma vez). O progresso fica salvo no `localStorage` do navegador.
 - As velocidades de teste adiantam o relógio; ao voltar para 1× ele volta ao horário real.
-- Em **Ajustes** dá pra acelerar o tempo (até 600×) e trocar o visual entre **Ilustrado** (padrão), **Suave**, **Pixel art** e **Clássico (LCD)**.
+- Em **Ajustes** dá pra acelerar o tempo (até 600×) e trocar o visual entre **Pintado (protótipo)**, **Ilustrado** (padrão), **Suave**, **Pixel art** e **Clássico (LCD)**.
 
 ## Acessórios
 
@@ -62,6 +62,9 @@ js/world.js             mapa do cenário
 js/behavior.js          gestos → Pose
 js/faces.js             expressão final e páginas de status
 js/renderers/illustrated.js visual Ilustrado (padrão)
+js/renderers/painted.js visual Pintado: troca a fada do Ilustrado pela arte pintada
+assets/fada/            arte pintada pronta para o jogo (gerada por tools/process_art.py)
+art/                    referência, roteiro de prompts e imagens recebidas do ChatGPT
 js/renderers/smooth.js  visual Suave (também fornece itens e telas de Status/Comida ao Ilustrado)
 js/renderers/pixel.js   visual Pixel art
 js/renderers/lcd.js     visual Clássico (LCD)
@@ -71,7 +74,8 @@ js/ui.js                botões, ficha, salvamento e loop
 sw.js                   service worker (cache offline)
 manifest.webmanifest    manifesto do app
 icons/                  ícones gerados a partir da fada
-tools/build_artifact.py gera a versão de arquivo único usada no Claude
+tools/build_artifact.py gera a versão de arquivo único usada no Claude (com a arte embutida)
+tools/process_art.py    limpa, escala e recorta a arte de art/ para assets/fada/
 ```
 
 ### Publicar uma versão nova
@@ -141,6 +145,8 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v0.9: visual Suave (vetorial, alta resolução) como padrão
 - [x] v1.0: app instalável (PWA), offline, aviso de atualização, backup da fada, código dividido em arquivos
 - [x] v1.1: visual Ilustrado; resolução do canvas adaptada à tela
+- [x] v1.2: protótipo do visual Pintado (7 poses pintadas no ChatGPT + asas por código)
+- [ ] Pintado completo: expressões, asas pintadas, bebê, acessórios, cores
 - [ ] Avisos no celular quando ela precisar de cuidado
 - [ ] Gráficos realistas
 
