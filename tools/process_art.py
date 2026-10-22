@@ -22,17 +22,19 @@ UNIDADES = 56                    # ... e no mundo do jogo (192x120)
 # (a IA às vezes encolhe a figura para caber os braços, ou aproxima a câmera)
 FASES = {
     'adulta': {'prefixo': '', 'ref': 'art/referencia/fada-adulta.png', 'arq': 'fada', 'unidades': 56,
-               'fator': {'espreguicando': 1503 / 1391}},
+               'fator': {'espreguicando': 1503 / 1391},
+               # encaixe dos rostos: (olho esq., olho dir., boca) na referência e nos rostos; elipse do rosto
+               'rosto': {'ref': [(466, 196), (531, 190), (500, 247)], 'img': [(548, 745), (805, 735), (681, 942)],
+                         'mascara': ((499, 221), 48, 52), 'blur': 9}},
     'bebe':   {'prefixo': 'bebe_', 'ref': 'art/referencia/fada-bebe.png', 'arq': 'bebe', 'unidades': 38,
-               'fator': {'tedio': 0.75}},
+               'fator': {'tedio': 0.75},
+               'rosto': {'ref': [(446, 386), (580, 354), (531, 463)], 'img': [(543, 854), (822, 847), (686, 1052)],
+                         'mascara': ((513, 405), 124, 98), 'blur': 12,
+                         'olhos': [((446, 368), 62, 58), ((586, 336), 64, 60)]}},   # a cabeça dela é inclinada
 }
 POSES = ['referencia', 'acenando', 'espreguicando', 'fome', 'bocejo', 'cochilo', 'tedio', 'lado']
 # expressões aplicadas sobre a pose parada (referência)
 ROSTOS = ['feliz', 'triste', 'dormindo', 'cansada', 'entediada']
-# pontos de encaixe (olho esq., olho dir., centro da boca) em pixels das imagens originais
-REF_PTS = [(466, 196), (531, 190), (500, 247)]
-ROSTO_PTS = [(548, 745), (805, 735), (681, 942)]
-MASCARA = ((499, 221), 48, 52)          # elipse do rosto na referência (centro, raio x, raio y)
 
 
 def src(fase, n):
@@ -49,15 +51,17 @@ def affine_from(src, dst):
 
 
 def rosto_sobre_referencia(fase, nome):
-    """Cola a expressão sobre o rosto da referência, alinhando olhos e boca.
-    (pontos de encaixe medidos para a adulta; a bebê ganha os dela quando os rostos chegarem)"""
+    """Cola a expressão sobre o rosto da referência, alinhando olhos e boca."""
+    R = fase['rosto']
     ref = Image.open(src(fase, 'referencia')).convert('RGBA')
     face = Image.open(ROOT / f"art/recebidas/{fase['arq']}_rosto_{nome}.png").convert('RGBA')
-    warped = face.transform(ref.size, Image.AFFINE, affine_from(ROSTO_PTS, REF_PTS), resample=Image.BICUBIC)
-    (cx, cy), rx, ry = MASCARA
+    warped = face.transform(ref.size, Image.AFFINE, affine_from(R['img'], R['ref']), resample=Image.BICUBIC)
+    (cx, cy), rx, ry = R['mascara']
     mask = Image.new('L', ref.size, 0)
-    ImageDraw.Draw(mask).ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(9))
+    dm = ImageDraw.Draw(mask)
+    for (ex, ey), erx, ery in [R['mascara']] + R.get('olhos', []):
+        dm.ellipse((ex - erx, ey - ery, ex + erx, ey + ery), fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(R['blur']))
     # acerta a cor da pele do rosto novo pela da referência (média e contraste por canal)
     inner = Image.new('L', ref.size, 0)
     ImageDraw.Draw(inner).ellipse((cx - rx * .7, cy - ry * .7, cx + rx * .7, cy + ry * .7), fill=255)
@@ -96,9 +100,8 @@ def processa(fase, meta):
     P = fase['prefixo']
     ref_h = None
     altura = ALTURA * fase['unidades'] / UNIDADES
-    tem_pontos = fase['arq'] == 'fada'
     lista = POSES + [f'referencia_{r}' for r in ROSTOS
-                     if tem_pontos and (ROOT / f"art/recebidas/{fase['arq']}_rosto_{r}.png").exists()]
+                     if 'rosto' in fase and (ROOT / f"art/recebidas/{fase['arq']}_rosto_{r}.png").exists()]
     for n in lista:
         if n.startswith('referencia_'):
             im = rosto_sobre_referencia(fase, n.split('_', 1)[1])

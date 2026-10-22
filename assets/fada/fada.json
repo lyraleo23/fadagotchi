@@ -126,6 +126,36 @@
    "h": 338,
    "footX": 113.0,
    "footY": 338
+  },
+  "bebe_referencia_feliz": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
+  },
+  "bebe_referencia_triste": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
+  },
+  "bebe_referencia_dormindo": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
+  },
+  "bebe_referencia_cansada": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
+  },
+  "bebe_referencia_entediada": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
   }
  },
  "asa": {

@@ -1,6 +1,6 @@
 /* Service worker do Fadagotchi: guarda o app para funcionar offline.
    Ao publicar uma versão nova, suba VERSION (igual a js/version.js). */
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const CACHE = 'fadagotchi-' + VERSION;
 const FONTS = 'fadagotchi-fonts';
 const ASSETS = [
@@ -9,6 +9,7 @@ const ASSETS = [
   'js/behavior.js', 'js/faces.js', 'js/renderers/lcd.js', 'js/renderers/pixel.js', 'js/renderers/smooth.js', 'js/renderers/illustrated.js', 'js/renderers/painted.js',
   'assets/fada/fada.json', 'assets/fada/referencia.webp', 'assets/fada/acenando.webp', 'assets/fada/espreguicando.webp', 'assets/fada/fome.webp', 'assets/fada/bocejo.webp', 'assets/fada/cochilo.webp', 'assets/fada/tedio.webp', 'assets/fada/lado.webp', 'assets/fada/asa.webp', 'assets/fada/referencia_feliz.webp', 'assets/fada/referencia_triste.webp', 'assets/fada/referencia_dormindo.webp', 'assets/fada/referencia_cansada.webp', 'assets/fada/referencia_entediada.webp',
   'assets/fada/bebe_referencia.webp', 'assets/fada/bebe_acenando.webp', 'assets/fada/bebe_espreguicando.webp', 'assets/fada/bebe_fome.webp', 'assets/fada/bebe_bocejo.webp', 'assets/fada/bebe_cochilo.webp', 'assets/fada/bebe_tedio.webp', 'assets/fada/bebe_lado.webp',
+  'assets/fada/bebe_referencia_feliz.webp', 'assets/fada/bebe_referencia_triste.webp', 'assets/fada/bebe_referencia_dormindo.webp', 'assets/fada/bebe_referencia_cansada.webp', 'assets/fada/bebe_referencia_entediada.webp',
   'js/backup.js', 'js/app.js', 'js/ui.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-64.png',
 ];
