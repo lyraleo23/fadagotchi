@@ -184,6 +184,17 @@ kbd { font-family: var(--f-display); font-size: 11px; border: 1px solid var(--li
 
 .look-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .looks { display: grid; gap: 10px; }
+.accs { display: flex; flex-wrap: wrap; gap: 8px; }
+.acc {
+  font: inherit; font-size: 13px; border-radius: 999px; padding: 4px 12px;
+  border: 1px solid var(--line); background: var(--dusk-2); color: var(--cream);
+}
+button.acc { cursor: pointer; }
+button.acc:hover { border-color: var(--muted); }
+button.acc[aria-pressed="true"] { border-color: var(--sun); color: var(--sun); }
+button.acc:focus-visible { outline: 2px solid var(--btn); outline-offset: 2px; }
+span.acc.locked { color: var(--muted); border-style: dashed; }
+#careFill { background: var(--sun); }
 .look-row { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); align-items: center; gap: 10px; }
 .look-row .lbl { font-size: 14px; }
 .look-row .lbl small { display: block; color: var(--muted); font-size: 12px; line-height: 1.2; }
@@ -258,6 +269,12 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
     <ul class="bars" id="bars"></ul>
 
     <div class="block">
+      <div class="look-head"><span class="eyebrow">Acessórios</span><span class="meta" id="careMeta"></span></div>
+      <div class="track" aria-hidden="true"><div class="fill" id="careFill"></div></div>
+      <div class="accs" id="accs"></div>
+    </div>
+
+    <div class="block">
       <div class="look-head"><span class="eyebrow">Aparência</span><button class="ghost" id="lookRandom">Sortear tudo</button></div>
       <div class="looks" id="looks"></div>
     </div>
@@ -293,7 +310,7 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 
 <script>
 /* =====================================================================
-   FADAGOTCHI — v0.6
+   FADAGOTCHI — v0.7
    Arquitetura:
      1. Sprites   — pixel art (LCD monocromático + itens coloridos)
      2. Core      — estado + regras da simulação (não sabe nada de tela)
@@ -463,7 +480,7 @@ function newState() {
     v: 1, name: 'Lumi', stage: 'bud', ageMin: 0, simTime: now, lastReal: now,
     hunger: 80, affection: 70, fun: 70, bladder: 10, hygiene: 95, energy: 90, health: 100,
     sick: false, poops: 0, asleep: false, lightsOff: false, sweets: [],
-    gone: false, speed: 1, sound: false, skin: 'color', look: randomLook(), log: [],
+    gone: false, speed: 1, sound: false, skin: 'color', look: randomLook(), care: 0, unlocked: [], wear: {}, log: [],
   };
 }
 
@@ -524,7 +541,16 @@ const Core = {
     if (s.poops >= 3) dh -= 4;
     if (dh === 0 && ['hunger', 'affection', 'fun', 'hygiene', 'energy'].every(st => s[st] >= 40)) dh = 4;
     s.health = cl(s.health + dh * h);
-    if (s.health <= 0) { s.gone = true; this.emit('gone'); }
+    if (s.health <= 0) { s.gone = true; this.emit('gone'); return; }
+
+    // brilho de cuidado → acessórios
+    if (s.asleep ? (s.lightsOff && !s.sick) : this.needs(s).length === 0) {
+      s.care += dm / 60;
+      for (const a of ACCESSORIES) if (s.care >= a.hours && !s.unlocked.includes(a.id)) {
+        s.unlocked.push(a.id); s.wear = Object.assign({}, s.wear, { [a.slot]: a.id });
+        this.emit('unlock', a);
+      }
+    }
   },
   advance(s, minutes) {
     while (minutes > 1e-9) { const dm = Math.min(1, minutes); this.stepMinute(s, dm); minutes -= dm; }
@@ -604,6 +630,20 @@ function randomLook() {
   return o;
 }
 const lookOf = s => { const l = Object.assign({}, DEFAULT_LOOK, s.look || {}); for (const [k] of LOOK_PARTS) if (!LOOKS[k][l[k]]) l[k] = DEFAULT_LOOK[k]; return l; };
+
+/* ---------- ACESSÓRIOS (ganhos com bom cuidado) ----------
+   Cada hora bem cuidada (nenhuma necessidade pendente, ou dormindo de luz
+   apagada) soma "brilho de cuidado". Nos marcos abaixo ela ganha um
+   acessório. Contrato com os renderers: o id e o slot; a arte é de cada um. */
+const ACCESSORIES = [
+  { id: 'laco', label: 'Laço de fita', slot: 'head', hours: 3 },
+  { id: 'colar', label: 'Colar de orvalho', slot: 'neck', hours: 8 },
+  { id: 'coroa', label: 'Coroa de flores', slot: 'head', hours: 16 },
+  { id: 'capa', label: 'Capa de pétalas', slot: 'back', hours: 30 },
+  { id: 'tiara', label: 'Tiara de estrela', slot: 'head', hours: 50 },
+  { id: 'brilho', label: 'Asas cintilantes', slot: 'aura', hours: 80 },
+];
+const wearOf = s => s.wear || {};
 
 /* ---------- 2b. WORLD (mapa do cenário, em coordenadas normalizadas) ----------
    x: 0 = borda esquerda · 1 = borda direita.  y: 0 = topo · 1 = base da tela.
@@ -800,7 +840,7 @@ const Behavior = (() => {
 })();
 
 /* expressão do momento (compartilhada pelos renderers) */
-const HAPPY_ANIMS = ['eat', 'pet', 'toilet', 'bath', 'med', 'hatch', 'win', 'grow'];
+const HAPPY_ANIMS = ['eat', 'pet', 'toilet', 'bath', 'med', 'hatch', 'win', 'grow', 'gift'];
 function faceFor(s, anim, pose) {
   let face = Core.mood(s);
   if (pose && pose.face) face = pose.face;
@@ -950,7 +990,7 @@ const LcdRenderer = (() => {
       } else if (t === 'med') {
         blit(ICON.med, side, b.y + 6);
         sparkles(b.x + b.w / 2, b.y + b.h / 2, 10, tick, 3);
-      } else if (t === 'hatch' || t === 'grow' || t === 'win') {
+      } else if (t === 'hatch' || t === 'grow' || t === 'win' || t === 'gift') {
         sparkles(b.x + b.w / 2, b.y + b.h / 2, 12, tick, 4);
       }
     }
@@ -1162,6 +1202,8 @@ const ColorRenderer = (() => {
 
   // ---- aparência (Looks) ----
   let EYE = LOOKS.eyes.ametista, WING = LOOKS.wings.cristal, lookKey = '';
+  let WEAR = {};
+  const RIBBON = [0xffb8c0, 0xf05868, 0xc83a4c, 0x96283a], CAPE = [0xffd6e0, 0xf590ac, 0xd26482, 0xa04460];
   function applyLook(look) {
     const k = JSON.stringify(look);
     if (k === lookKey) return;
@@ -1207,6 +1249,11 @@ const ColorRenderer = (() => {
     if (folded) { pair(Math.PI + 1.3, 14 * ws, 4 * ws); pair(Math.PI + 0.95, 9 * ws, 3 * ws); }
     else { pair(Math.PI + 0.6 + 0.42 * flap, 17 * ws, (7 + 1.6 * flap) * ws); pair(Math.PI - 0.62 + 0.2 * flap, 10 * ws, 4.6 * ws); }
 
+    // capa de pétalas (atrás do corpo, na frente das asas)
+    if (WEAR.back === 'capa') {
+      const c0 = ty - 1, h = F - 2 - c0;
+      for (let k = -2; k <= 2; k++) ellF(body, bx + k * 4.6 - fo * 0.5, c0 + h * 0.55, 4.4, h * 0.6, -k * 0.24, (u, v) => (Math.round((u + 1) * 3) % 2 && v > 0.6) ? CAPE[2] : sh(CAPE)(u, v));
+    }
     // cabelo de trás (vai para o lado oposto ao olhar)
     const sway = Math.sin(t * 0.003);
     if (!baby) {
@@ -1297,7 +1344,7 @@ const ColorRenderer = (() => {
       if (ring > 0.42 && ring < 0.56 && u < 0.25 && v < -0.35) c = T.hair[0];
       P(body, hx + dx, hy + dy, c);
     }
-    if (!baby) {
+    if (!baby && WEAR.head !== 'coroa' && WEAR.head !== 'tiara') {
       const fxp = hx - R + 2 - Math.max(0, fo), fyp = hy - R + 3;
       ball(body, fxp - 1.5, fyp, 1.3, T.porc); ball(body, fxp + 1.5, fyp, 1.3, T.porc); ball(body, fxp, fyp - 1.5, 1.3, T.porc); ball(body, fxp, fyp + 1.5, 1.3, T.porc);
       P(body, fxp, fyp, T.gold[1]);
@@ -1350,6 +1397,31 @@ const ColorRenderer = (() => {
     else if (face === 'bored') for (let x = -1; x <= 1; x++) P(body, mx + x, my, M);
     else { P(body, mx - 2, my - 1, M); P(body, mx + 2, my - 1, M); for (let x = -1; x <= 1; x++) P(body, mx + x, my, M); }
 
+    // acessórios de cabeça e pescoço
+    const hw = WEAR.head;
+    if (hw === 'laco') {
+      const lx = hx + R - 3 - Math.min(0, fo), ly = hy - R + 1;
+      ellF(body, lx - 2.2, ly, 2.2, 1.6, 0.45, sh(RIBBON)); ellF(body, lx + 2.2, ly, 2.2, 1.6, -0.45, sh(RIBBON));
+      P(body, lx - 1, ly + 2, RIBBON[2]); P(body, lx + 1, ly + 2, RIBBON[2]); P(body, lx - 1, ly + 3, RIBBON[3]); P(body, lx + 2, ly + 3, RIBBON[3]);
+      ball(body, lx, ly, 1, RIBBON);
+    } else if (hw === 'coroa') {
+      const cols = [0xffffff, 0xff9cc8, 0xc4a6f2, 0xffe07a];
+      for (let j = -4; j <= 4; j++) {
+        const a = j * 0.3, x = hx + Math.sin(a) * (R + 0.6), y = hy - Math.cos(a) * (R + 0.6) + 1.2;
+        if (j % 2) { P(body, x, y, 0x5fbb7e); P(body, x, y - 1, 0x93dfa9); continue; }
+        const c = cols[(j + 8) % 4];
+        ball(body, x, y, 1.6, [0xffffff, c, mix(c, 0x9a6aa0, .35), mix(c, 0x6a4a80, .5)]); P(body, x, y, 0xffd95a);
+      }
+    } else if (hw === 'tiara') {
+      for (let x = -R + 2; x <= R - 2; x++) P(body, hx + x, hy - Math.sqrt(R * R - x * x) + 2.5, x < 0 ? T.gold[0] : T.gold[2]);
+      star(body, hx + Math.round(fo / 2), hy - R, 3.2, T.gold, 0);
+      P(body, hx + Math.round(fo / 2), hy - R, 0x9fdcff);
+    }
+    if (WEAR.neck === 'colar') {
+      const ny = hy + R + 1;
+      for (let i = -3; i <= 3; i++) P(body, bx + i, ny + (Math.abs(i) < 2 ? 1 : 0), i % 2 ? 0xffffff : 0xe8e6f4);
+      ball(body, bx, ny + 3, 1.3, T.water);
+    }
     front.forEach(fn => fn());
     // mão na frente da boca (bocejo)
     if (armL === 'mouth') {
@@ -1522,7 +1594,7 @@ const ColorRenderer = (() => {
 
   function draw(s, ui, now, pose) {
     const t = now;
-    applyLook(lookOf(s));
+    applyLook(lookOf(s)); WEAR = wearOf(s);
     const anim = ui.anim && now - ui.anim.t0 < ui.anim.dur ? ui.anim : null;
     const prog = anim ? (now - anim.t0) / anim.dur : 0;
     const blink = (t % 4300) < 130;
@@ -1612,6 +1684,15 @@ const ColorRenderer = (() => {
     comp(main, wing, .72);
     comp(main, body);
     stepDust(t, f, !s.asleep);
+    if (WEAR.aura === 'brilho') {
+      for (let i = 0; i < 10; i++) {
+        const side = i % 2 ? 1 : -1, ph = (Math.sin(t * 0.005 + i * 2.3) + 1) / 2;
+        if (ph < 0.45) continue;
+        const x = f.hx + side * (7 + ((i * 7) % 12)), y = f.cy - 14 + ((i * 5) % 14);
+        glow(main, x, y, 3, 0xfff3b0, .5 * ph); P(main, x, y, ph > 0.85 ? 0xffffff : 0xfff0a0);
+        if (ph > 0.85) { P(main, x - 1, y, 0xfff6c8); P(main, x + 1, y, 0xfff6c8); P(main, x, y - 1, 0xfff6c8); P(main, x, y + 1, 0xfff6c8); }
+      }
+    }
     if (pose.trail && ui.view === 'main') {
       glow(main, f.hx, f.cy, 26, 0xfff3b0, .2);
       layer(B => { for (let i = 0; i < 4; i++) { const a = t * 0.012 + i * Math.PI / 2; star(B, f.hx + Math.cos(a) * 20, f.cy + Math.sin(a) * 9, 2.4, T.gold, a); } });
@@ -1684,7 +1765,7 @@ const ColorRenderer = (() => {
       } else if (ty === 'med') {
         layer(B => potion(B, f.side, f.F - 10, 1));
         sparkleRing(f.hx, f.cy, 20, t, 4);
-      } else if (['hatch', 'grow', 'win'].includes(ty)) {
+      } else if (['hatch', 'grow', 'win', 'gift'].includes(ty)) {
         sparkleRing(f.hx, f.cy, 24, t, 6);
       }
     }
@@ -1741,7 +1822,7 @@ function logEv(text) { s.log.unshift({ t: s.simTime, text }); s.log = s.log.slic
 function say(text, ms = 4500) { ui.msg = text; ui.msgUntil = performance.now() + ms; }
 function anim(type, dur, extra = {}) { ui.anim = Object.assign({ type, t0: performance.now(), dur }, extra); }
 let catchingUp = false;
-Core.emit = ev => {
+Core.emit = (ev, data) => {
   const n = s.name;
   const map = {
     hatch: (() => { const l = lookOf(s); return `O botão de flor abriu! ${n} nasceu com cabelo ${LOOKS.hair[l.hair].label.toLowerCase()} e asas ${LOOKS.wings[l.wings].label.toLowerCase()}.`; })(),
@@ -1751,11 +1832,13 @@ Core.emit = ev => {
     accident: `${n} não aguentou e fez sujeira no chão.`,
     sick: `${n} ficou doente.`,
     gone: `${n} voltou para a floresta.`,
+    unlock: data ? `${n} foi tão bem cuidada que ganhou: ${data.label}!` : '',
   };
   logEv(map[ev]);
   if (!catchingUp) {
     say(map[ev]);
     if (ev === 'hatch' || ev === 'grow') anim(ev, 3000);
+    if (ev === 'unlock') { anim('gift', 3200); say(map[ev], 7000); beep(1046, .08, 3); }
     if (ev === 'accident') anim('accident', 2500);
     if (ev === 'sick' || ev === 'accident') beep(330, .15, 2);
   }
@@ -1931,6 +2014,28 @@ function renderLooks() {
   for (const [part] of LOOK_PARTS) $('ln-' + part).textContent = LOOKS[part][l[part]].label;
 }
 
+const fmtH = h => h >= 10 ? `${Math.floor(h)} h` : h >= 1 ? `${h.toFixed(1).replace('.', ',')} h` : `${Math.round(h * 60)} min`;
+let accKey = '';
+function renderAccs() {
+  const next = ACCESSORIES.find(a => !s.unlocked.includes(a.id));
+  const prev = [...ACCESSORIES].reverse().find(a => s.unlocked.includes(a.id));
+  $('careMeta').textContent = `${fmtH(s.care)} bem cuidada` + (next ? ` · próximo em ${fmtH(next.hours - s.care)}` : ' · coleção completa');
+  const lo = prev ? prev.hours : 0, hi = next ? next.hours : lo || 1;
+  $('careFill').style.width = (next ? Math.min(100, (s.care - lo) / (hi - lo) * 100) : 100).toFixed(1) + '%';
+  const w = wearOf(s), key = JSON.stringify([s.unlocked, w]);
+  if (key === accKey) return;
+  accKey = key;
+  $('accs').innerHTML = ACCESSORIES.map(a => s.unlocked.includes(a.id)
+    ? `<button class="acc" data-id="${a.id}" aria-pressed="${w[a.slot] === a.id}">${a.label}</button>`
+    : `<span class="acc locked" title="Libera com ${a.hours} h bem cuidada">${a.label} · ${a.hours} h</span>`).join('');
+  $('accs').querySelectorAll('button.acc').forEach(b => b.onclick = () => {
+    const a = ACCESSORIES.find(x => x.id === b.dataset.id), cur = wearOf(s);
+    s.wear = Object.assign({}, cur, { [a.slot]: cur[a.slot] === a.id ? null : a.id });
+    say(s.wear[a.slot] ? `${s.name} colocou: ${a.label}.` : `${s.name} tirou: ${a.label}.`);
+    save(); render();
+  });
+}
+
 function fmtAge(min) {
   const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = Math.floor(min % 60);
   return d ? `${d}d ${h}h` : h ? `${h}h ${m}min` : `${m} min`;
@@ -2004,6 +2109,7 @@ function render() {
   $('log').innerHTML = s.log.length ? s.log.map(e => `<li><time>${hhmm(e.t)}</time>${e.text}</li>`).join('') : '<li>Nada aconteceu ainda.</li>';
   $('goneBox').hidden = !s.gone;
   if (s.gone) $('goneText').textContent = `${n} ficou fraca demais e voltou para a floresta. Fadas precisam de comida, carinho, banho e descanso todos os dias.`;
+  renderAccs();
   $('speed').value = String(s.speed);
   $('skin').value = s.skin;
   $('sound').checked = !!s.sound;

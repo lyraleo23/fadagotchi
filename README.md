@@ -12,6 +12,21 @@ Abra `index.html` no navegador. Não precisa de build nem dependências.
 - O tempo passa em tempo real, inclusive com a página fechada (até 3 dias). O progresso fica salvo no `localStorage` do navegador.
 - Em **Ajustes** dá pra acelerar o tempo (até 600×) e trocar o visual entre **Colorido** e **Clássico (LCD)**.
 
+## Acessórios
+
+Cada hora em que ela fica bem cuidada (nenhuma necessidade pendente, ou dormindo de luz apagada) soma **brilho de cuidado**. Nos marcos ela ganha um acessório, que já vem vestido; dá pra tirar e pôr na ficha.
+
+| Acessório | Lugar | Horas bem cuidada |
+|---|---|---|
+| Laço de fita | cabeça | 3 |
+| Colar de orvalho | pescoço | 8 |
+| Coroa de flores | cabeça | 16 |
+| Capa de pétalas | costas | 30 |
+| Tiara de estrela | cabeça | 50 |
+| Asas cintilantes | asas | 80 |
+
+Contrato com os renderers: `state.wear` = `{ head, neck, back, aura }` com o `id` do acessório. A arte é de cada renderer.
+
 ## Ciclo de vida
 
 Cada botão de flor já vem com uma aparência sorteada (a cor do botão é a do cabelo). Dá pra trocar tudo em **Aparência**, na ficha.
@@ -74,6 +89,7 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v0.4: camada Behavior + Pose, gestos (aceno, pirueta, bocejo, cochilo, fome, tédio, adormecer, espreguiçar), fada vira de lado, toque na fada
 - [x] v0.5: World (mapa do cenário); dorme dentro da casinha (janela acesa/apagada), cheira flores, persegue borboletas, brinca com vaga-lumes
 - [x] v0.6: aparência sorteada ao nascer (8 cabelos, 5 tons de pele, 5 olhos, 6 vestidos, 5 asas) e editável na ficha
+- [x] v0.7: acessórios ganhos com bom cuidado (laço, colar, coroa, capa, tiara, asas cintilantes)
 - [ ] Gráficos realistas
 
 ## Publicação
