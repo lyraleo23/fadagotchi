@@ -365,10 +365,12 @@ function setSkin() {
 }
 // tela mudou de tamanho (girou o celular, redimensionou a janela): refaz na resolução nova
 let skinScale = 0, resizeT = 0;
-window.addEventListener('resize', () => {
+function checkScale() {
   clearTimeout(resizeT);
-  resizeT = setTimeout(() => { const k = renderScale($('lcd')); if (k !== skinScale) { skinScale = k; setSkin(); } }, 250);
-});
+  resizeT = setTimeout(() => { const k = renderScale($('lcd')); if (k !== skinScale) { skinScale = k; setSkin(); } }, 200);
+}
+if (window.ResizeObserver) new ResizeObserver(checkScale).observe($('lcd'));
+else window.addEventListener('resize', checkScale);
 
 /* loop */
 let lastTick = performance.now();
@@ -428,9 +430,22 @@ function start(snap) {
     const r = e.currentTarget.getBoundingClientRect();
     gameGuess(e.clientX - r.left < r.width / 2 ? 'L' : 'R');
   });
+  // tela cheia: a classe faz o layout; a API do navegador esconde as barras quando existe (no iPhone, só a classe)
+  const setFull = on => {
+    document.body.classList.toggle('full', on);
+    $('fullBtn').setAttribute('aria-label', on ? 'Sair da tela cheia' : 'Tela cheia');
+    const el = document.documentElement;
+    try {
+      if (on && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    } catch (err) {}
+  };
+  $('fullBtn').addEventListener('click', e => { e.stopPropagation(); setFull(!document.body.classList.contains('full')); });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('full')) setFull(false); });
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, select')) return;
     const k = e.key.toLowerCase();
+    if (k === 'f') { e.preventDefault(); setFull(!document.body.classList.contains('full')); return; }
     if (k === 'arrowleft') { e.preventDefault(); pressLeft(); }
     else if (k === 'arrowright') { e.preventDefault(); pressRight(); }
     else if (k === 'enter' || k === ' ') { if (e.target.closest('button')) return; e.preventDefault(); pressOk(); }
