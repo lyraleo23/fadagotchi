@@ -46,7 +46,7 @@ Contrato com os renderers: `state.wear` = `{ head, neck, back, aura }` com o `id
 Cada botão de flor já vem com uma aparência sorteada (a cor do botão é a do cabelo). Dá pra trocar tudo em **Aparência**, na ficha.
 
 
-Botão de flor → abre em 30 s → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h.
+Botão de flor → abre em 30 s → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h. De dia ela pode cochilar (luz apagada ou exausta); acender a luz acorda.
 
 ## Estrutura
 

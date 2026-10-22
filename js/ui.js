@@ -8,7 +8,7 @@ const BAR_DEF = [
   { k: 'hunger', lbl: 'Barriga', sub: 'cheia ou com fome' },
   { k: 'affection', lbl: 'Carinho' },
   { k: 'fun', lbl: 'Diversão' },
-  { k: 'bladder', lbl: 'Banheiro', sub: 'vontade de ir', inv: true },
+  { k: 'bladder', lbl: 'Banheiro', sub: 'cai quando dá vontade', inv: true },
   { k: 'hygiene', lbl: 'Higiene' },
   { k: 'energy', lbl: 'Energia' },
   { k: 'health', lbl: 'Saúde' },
@@ -71,16 +71,23 @@ function act(id) {
       say('Pra que lado ela vai voar? Use ◀ ou ▶.', 60000); break;
     case 'toilet':
       if (s.bladder < 30) { refuse('Não estou com vontade agora.'); break; }
-      s.bladder = 0; s.affection = cl(s.affection + 4);
-      anim('toilet', 2400); say(`Muito bem! ${n} foi no banheirinho.`); logEv(`${n} usou o banheiro.`); break;
+      s.bladder = 0; s.affection = cl(s.affection + 4); s.hygiene = cl(s.hygiene - 10);
+      anim('toilet', 2400); say(`Muito bem! ${n} foi no banheirinho. Um banho depois cai bem.`); logEv(`${n} usou o banheiro.`); break;
     case 'bath': {
       const had = s.poops; s.hygiene = 100; s.poops = 0;
       anim('bath', 2000); say(had ? 'Sujeira lavada, tudo limpinho!' : `${n} tomou banho e está cheirosa.`); break;
     }
     case 'light':
       s.lightsOff = !s.lightsOff;
+      // de dia, acender a luz acorda a fada (à noite ela continua dormindo)
+      if (!s.lightsOff && s.asleep && !Core.isNight(s)) {
+        s.asleep = false; logEv(`${n} acordou com a luz.`);
+        if (s.energy < 40) { s.fun = cl(s.fun - 5); say(`${n} acordou, mas ainda está com soninho.`); }
+        else say(`Bom dia! ${n} acordou.`);
+        break;
+      }
       if (s.lightsOff) say(s.asleep ? 'Luz apagada. Bom sono.' : (s.energy < 60 ? 'Luz apagada. Ela vai cochilar.' : 'Luz apagada, mas ela ainda não está com sono.'));
-      else say(s.asleep ? 'Luz acesa. Dormir com luz atrapalha o descanso.' : 'Luz acesa.');
+      else say(s.asleep ? 'Luz acesa. À noite ela continua dormindo, e com luz descansa pior.' : 'Luz acesa.');
       break;
     case 'med':
       if (!s.sick) { refuse(`${n} não está doente. Poção só quando precisar.`); break; }
@@ -96,10 +103,10 @@ function feed(kind) {
   ui.view = 'main';
   if (kind === 'meal') {
     if (s.hunger >= 95) { refuse('Estou cheia!'); return render(); }
-    s.hunger = cl(s.hunger + 35); s.bladder = cl(s.bladder + 10);
+    s.hunger = cl(s.hunger + 35); s.bladder = cl(s.bladder + 25);
     anim('eat', 2400, { item: 'meal' }); say(`Nhac! ${n} comeu a refeição.`);
   } else {
-    s.hunger = cl(s.hunger + 8); s.fun = cl(s.fun + 15); s.sweets.push(s.simTime);
+    s.hunger = cl(s.hunger + 8); s.fun = cl(s.fun + 15); s.bladder = cl(s.bladder + 8); s.sweets.push(s.simTime);
     anim('eat', 2000, { item: 'candy' });
     if (s.sweets.length > 3) { s.health = cl(s.health - 8); say('Doce demais faz mal pra barriga...'); }
     else say(`${n} amou o docinho.`);
@@ -286,7 +293,7 @@ function render() {
   else if (s.gone) cap = `${n} voltou para a floresta.`;
   else if (s.stage === 'bud') cap = 'Um botão de flor. Algo se mexe lá dentro...';
   else if (needs.length) cap = `${n} ${needs[0]}.`;
-  else if (s.asleep) cap = s.lightsOff ? 'Zzz… dormindo.' : 'Zzz… dormindo, mas a luz está acesa.';
+  else if (s.asleep) cap = !Core.isNight(s) ? `${n} está tirando um cochilo. Acenda a luz pra acordar.` : s.lightsOff ? 'Zzz… dormindo.' : 'Zzz… dormindo, mas a luz está acesa.';
   else cap = { happy: `${n} está feliz, voando por aí.`, neutral: `${n} está tranquila.`, sad: `${n} não parece bem.` }[Core.mood(s)];
   $('caption').textContent = cap;
 
@@ -317,11 +324,10 @@ function render() {
   $('tags').innerHTML = tags.map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join('');
 
   for (const b of BAR_DEF) {
-    const v = s[b.k];
-    const good = b.inv ? 100 - v : v;
+    const v = b.inv ? 100 - s[b.k] : s[b.k];   // todas as barras: 100 = tudo certo
     const f = $('f-' + b.k);
     f.style.width = v.toFixed(0) + '%';
-    f.className = 'fill' + (good < 25 ? ' crit' : good < 50 ? ' warn' : '');
+    f.className = 'fill' + (v < 25 ? ' crit' : v < 50 ? ' warn' : '');
     $('v-' + b.k).textContent = Math.round(v);
   }
   $('log').innerHTML = s.log.length ? s.log.map(e => `<li><time>${hhmm(e.t)}</time>${e.text}</li>`).join('') : '<li>Nada aconteceu ainda.</li>';

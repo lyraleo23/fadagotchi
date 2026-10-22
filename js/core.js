@@ -58,14 +58,14 @@ const Core = {
       s.affection = cl(s.affection - (s.lightsOff ? 2 : 6) * h);
       s.hygiene = cl(s.hygiene - (2 + 8 * p) * h);
       s.energy = cl(s.energy + (s.lightsOff ? 22 : 10) * h);
-      s.bladder = cl(s.bladder + 5 * h);
+      s.bladder = cl(s.bladder + 6 * h);
     } else {
       s.hunger = cl(s.hunger - 10 * k * h);
       s.fun = cl(s.fun - 9 * k * h);
       s.affection = cl(s.affection - 7 * k * h);
       s.hygiene = cl(s.hygiene - (5 + 8 * p) * h);
       s.energy = cl(s.energy - 7 * k * h);
-      s.bladder = cl(s.bladder + 16 * k * h);
+      s.bladder = cl(s.bladder + 20 * k * h);
     }
 
     if (s.bladder >= 100) {
