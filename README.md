@@ -4,7 +4,20 @@ Bichinho virtual no estilo Tamagotchi: uma fada (pixie) que precisa de comida, c
 
 ## Como jogar
 
-Abra `index.html` no navegador. Não precisa de build nem dependências.
+Jogue em **https://lyraleo23.github.io/fadagotchi/** ou abra `index.html` por um servidor local (`python3 -m http.server`). Não precisa de build nem dependências.
+
+## Instalar no celular
+
+O Fadagotchi é um app instalável (PWA): ícone na tela inicial, tela cheia e funciona sem internet.
+
+- **Android (Chrome):** abra o link e toque em **Instalar app** (ou menu ⋮ → Instalar app). Também tem o botão em Ajustes → App.
+- **iPhone/iPad (Safari):** abra o link, toque em **Compartilhar** → **Adicionar à Tela de Início**.
+
+Quando sai versão nova, aparece a barra **Nova versão disponível → Atualizar**.
+
+### Levar a fada para outro aparelho
+
+O progresso fica guardado no aparelho. Em **Backup da fada**: **Copiar código** num aparelho e **Importar** no outro (ou baixe/escolha o arquivo `.json`). Ela vive o tempo da "viagem" ao chegar.
 
 - **◀ ▶** escolhem (ícone, comida, página de status, lado no minijogo) · **✓** confirma · **✕** cancela/volta (ou toque direto nos ícones)
 - Toque na fada pra ela dar uma pirueta ou rir de cócegas
@@ -35,7 +48,39 @@ Cada botão de flor já vem com uma aparência sorteada (a cor do botão é a do
 
 Botão de flor → abre em 30 s → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h.
 
-## Arquitetura (`index.html`)
+## Estrutura
+
+```
+index.html              marcação + carrega os scripts em ordem
+css/style.css           estilos
+js/version.js           versão do app
+js/sprites.js           pixel art do visual LCD
+js/core.js              simulação (fome, sono, saúde, acessórios…)
+js/looks.js             aparências
+js/accessories.js       acessórios
+js/world.js             mapa do cenário
+js/behavior.js          gestos → Pose
+js/faces.js             expressão final e páginas de status
+js/renderers/smooth.js  visual Suave (padrão)
+js/renderers/pixel.js   visual Pixel art
+js/renderers/lcd.js     visual Clássico (LCD)
+js/backup.js            exportar/importar
+js/app.js               PWA (service worker, instalação, atualização)
+js/ui.js                botões, ficha, salvamento e loop
+sw.js                   service worker (cache offline)
+manifest.webmanifest    manifesto do app
+icons/                  ícones gerados a partir da fada
+tools/build_artifact.py gera a versão de arquivo único usada no Claude
+```
+
+### Publicar uma versão nova
+
+1. Suba a versão em `js/version.js` **e** em `sw.js` (precisam ser iguais).
+2. Se criar arquivo novo em `js/`, coloque no `index.html` e na lista `ASSETS` do `sw.js`.
+3. `git push` — o GitHub Pages publica e o app instalado mostra **Atualizar**.
+4. Para o Claude: `python3 tools/build_artifact.py saida.html` gera o arquivo único.
+
+## Arquitetura
 
 ```
 Core (simulação) ──> Behavior (gestos) ──> Pose ──> Renderer (desenho)
@@ -93,9 +138,11 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v0.7: acessórios ganhos com bom cuidado (laço, colar, coroa, capa, tiara, asas cintilantes)
 - [x] v0.8: controles com 4 botões (◀ ▶ ✓ ✕)
 - [x] v0.9: visual Suave (vetorial, alta resolução) como padrão
+- [x] v1.0: app instalável (PWA), offline, aviso de atualização, backup da fada, código dividido em arquivos
+- [ ] Avisos no celular quando ela precisar de cuidado
 - [ ] Gráficos realistas
 
 ## Publicação
 
-- **GitHub Pages:** https://lyraleo23.github.io/fadagotchi/ (Settings → Pages → Deploy from a branch → `main` / root).
-- **Artifact no Claude:** o artifact recebe só o conteúdo de dentro do `<body>` mais `<title>`/`<style>` (o Claude adiciona o esqueleto HTML na publicação).
+- **App / GitHub Pages:** https://lyraleo23.github.io/fadagotchi/ (Settings → Pages → Deploy from a branch → `main` / root).
+- **Artifact no Claude:** arquivo único gerado por `tools/build_artifact.py` (sem manifesto nem service worker; o Claude coloca o esqueleto HTML).
