@@ -146,7 +146,8 @@ A expressão final vem de `faceFor(state, anim, pose)`: animações de ação (c
 - [x] v1.0: app instalável (PWA), offline, aviso de atualização, backup da fada, código dividido em arquivos
 - [x] v1.1: visual Ilustrado; resolução do canvas adaptada à tela
 - [x] v1.2: protótipo do visual Pintado (7 poses pintadas no ChatGPT + asas por código)
-- [ ] Pintado completo: expressões, asas pintadas, bebê, acessórios, cores
+- [x] v1.3: Pintado com 5 expressões (encaixadas no rosto da pose parada), piscar e asas pintadas
+- [ ] Pintado: bebê, acessórios, cores de cabelo/vestido, cenário pintado
 - [ ] Avisos no celular quando ela precisar de cuidado
 - [ ] Gráficos realistas
 

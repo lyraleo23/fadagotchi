@@ -32,6 +32,8 @@ def main(out):
     if fada.exists():
         meta = json.loads(fada.read_text(encoding='utf-8'))
         imgs = {n: 'data:image/webp;base64,' + base64.b64encode((ROOT / 'assets' / 'fada' / f'{n}.webp').read_bytes()).decode() for n in meta['poses']}
+        if 'asa' in meta:
+            imgs['asa'] = 'data:image/webp;base64,' + base64.b64encode((ROOT / 'assets' / 'fada' / 'asa.webp').read_bytes()).decode()
         inline = '<script>window.PAINTED_INLINE = ' + json.dumps({'meta': meta, 'imgs': imgs}) + ';</script>\n'
         html = html.replace('<script>\n/* Versão do app', inline + '<script>\n/* Versão do app', 1)
     for tag in ['<!doctype html>\n', '<html lang="pt-BR">\n', '<head>\n', '<meta charset="utf-8">\n',

@@ -48,6 +48,42 @@
    "h": 515,
    "footX": 147.5,
    "footY": 515
+  },
+  "referencia_feliz": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
+  },
+  "referencia_triste": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
+  },
+  "referencia_dormindo": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
+  },
+  "referencia_cansada": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
+  },
+  "referencia_entediada": {
+   "w": 184,
+   "h": 525,
+   "footX": 92.0,
+   "footY": 525
   }
+ },
+ "asa": {
+  "w": 300,
+  "h": 368,
+  "rootX": 300.0,
+  "rootY": 183.8
  }
 }
