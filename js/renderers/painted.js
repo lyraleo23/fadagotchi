@@ -4,13 +4,15 @@
    pose do momento (assets/fada/*.webp, gerada por tools/process_art.py).
    Na pose parada o rosto muda com a expressão e pisca. As asas pintadas
    (uma meia asa espelhada) batem atrás da pintura.
-   Enquanto não há arte da bebê, ela usa a fada do Ilustrado.            */
+   A bebê usa as poses bebe_* e as mesmas asas, menores. Sem arte de uma
+   fase, ela volta para a fada do Ilustrado.                             */
 const PaintedRenderer = (() => {
   const imgs = {};
   let meta = null, failed = false, cur = null, prev = null, switchAt = 0, wingImg = null, animOn = false;
   // onde ficam as costas (raiz das asas), em fração da altura a partir dos pés
-  const WING_AT = { tedio: 0.62, lado: 0.7, espreguicando: 0.68 };
-  const ANCHOR_X = { lado: 0.6 };
+  const WING_AT = { tedio: 0.62, lado: 0.7, espreguicando: 0.68, bebe_: 0.6, bebe_tedio: 0.55, bebe_lado: 0.62 };
+  const ANCHOR_X = { lado: 0.6, bebe_lado: 0.55 };
+  const SIT = { tedio: 100.5, bebe_tedio: 100.5 };   // sentada no chão
 
   function load() {
     if (meta || failed) return;
@@ -47,9 +49,9 @@ const PaintedRenderer = (() => {
   }
 
   // asas pintadas: meia asa esquerda, espelhada para a direita, batendo em volta da raiz
-  function wings(g, cx, wy, pose, t) {
-    if (!wingImg || !meta.asa) return IllustratedRenderer.wings(g, cx, wy, pose, t, 1);
-    const A = meta.asa, k = 26 / A.w;              // meia asa com ~26 unidades de largura
+  function wings(g, cx, wy, pose, t, ws) {
+    if (!wingImg || !meta.asa) return IllustratedRenderer.wings(g, cx, wy, pose, t, ws);
+    const A = meta.asa, k = 26 * ws / A.w;         // meia asa com ~26 unidades de largura (adulta)
     const fc = Math.max(-1, Math.min(1, pose.facing || 0)), folded = (pose.sleepP || 0) > 0.6;
     const ph = pose.wing ?? t * 0.014, flap = folded ? 0 : Math.sin(ph);
     [[-1, 1 + (fc > 0 ? 0.12 : 0.3) * fc], [1, 1 - (fc < 0 ? 0.12 : 0.3) * fc]].forEach(([sd, persp]) => {
@@ -68,7 +70,7 @@ const PaintedRenderer = (() => {
     if (!im || !m) return null;
     const u = meta.unitsPerPx, w = m.w * u, h = m.h * u;
     const ax = (ANCHOR_X[name] != null ? ANCHOR_X[name] * m.w : m.footX) * u;
-    const mirror = name === 'lado' && (pose.facing || 0) < 0;
+    const mirror = name.endsWith('lado') && (pose.facing || 0) < 0;
     const breathe = 1 + Math.sin(t * 0.0025) * 0.006;
     g.save(); g.globalAlpha = alpha;
     g.translate(cx, F); if (mirror) g.scale(-1, 1); g.scale(1, breathe);
@@ -78,18 +80,20 @@ const PaintedRenderer = (() => {
   }
 
   function fairy(g, stage, cx, F, face, t, blink, pose) {
-    if (stage !== 'adult' || !meta) return null;
-    let name = choose(pose, face, blink);
-    if (!imgs[name]) name = 'referencia';
+    if (!meta || (stage !== 'adult' && stage !== 'baby')) return null;
+    const P = stage === 'baby' ? 'bebe_' : '';
+    let name = P + choose(pose, face, blink);
+    if (!imgs[name]) name = P + 'referencia';
     if (!imgs[name]) return null;
-    const now = t;
-    const quick = name.startsWith('referencia') && (cur || '').startsWith('referencia');   // troca de rosto é instantânea
-    if (name !== cur) { prev = quick ? null : cur; cur = name; switchAt = now; }
-    if (name === 'tedio') F = 100.5;                   // sentada no chão
+    const now = t, isRef = n => (n || '').replace('bebe_', '').startsWith('referencia');
+    const quick = isRef(name) && isRef(cur);           // troca de rosto é instantânea
+    if (name !== cur) { prev = quick || (cur || '').startsWith('bebe_') !== !!P ? null : cur; cur = name; switchAt = now; }
+    if (SIT[name]) F = SIT[name];
     const m = meta.poses[name], h = m.h * meta.unitsPerPx;
-    wings(g, cx, F - h * (WING_AT[name.split('_')[0]] || 0.74), pose, t);
+    const wAt = WING_AT[name] ?? (P ? WING_AT.bebe_ : WING_AT[name.split('_')[0]]) ?? 0.74;
+    wings(g, cx, F - h * wAt, pose, t, P ? 0.68 : 1);
     const k = Math.min(1, (now - switchAt) / 160);     // troca suave entre poses
-    if (prev && k < 1 && imgs[prev]) drawPose(g, prev, cx, prev === 'tedio' ? 100.5 : F, t, pose, 1 - k);
+    if (prev && k < 1 && imgs[prev]) drawPose(g, prev, cx, SIT[prev] || F, t, pose, 1 - k);
     drawPose(g, name, cx, F, t, pose, k < 1 && prev ? k : 1);
     const top = F - h;
     return { hx: cx, hy: top + h * 0.12, F, top, cy: (top + F) / 2, side: cx + 30 <= 186 ? cx + 22 : cx - 22, star: null };

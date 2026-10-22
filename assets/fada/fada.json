@@ -78,6 +78,54 @@
    "h": 525,
    "footX": 92.0,
    "footY": 525
+  },
+  "bebe_referencia": {
+   "w": 167,
+   "h": 356,
+   "footX": 83.5,
+   "footY": 356
+  },
+  "bebe_acenando": {
+   "w": 176,
+   "h": 356,
+   "footX": 88.0,
+   "footY": 356
+  },
+  "bebe_espreguicando": {
+   "w": 179,
+   "h": 349,
+   "footX": 89.5,
+   "footY": 349
+  },
+  "bebe_fome": {
+   "w": 174,
+   "h": 350,
+   "footX": 87.0,
+   "footY": 350
+  },
+  "bebe_bocejo": {
+   "w": 174,
+   "h": 350,
+   "footX": 87.0,
+   "footY": 350
+  },
+  "bebe_cochilo": {
+   "w": 174,
+   "h": 351,
+   "footX": 87.0,
+   "footY": 351
+  },
+  "bebe_tedio": {
+   "w": 167,
+   "h": 215,
+   "footX": 83.5,
+   "footY": 215
+  },
+  "bebe_lado": {
+   "w": 226,
+   "h": 338,
+   "footX": 113.0,
+   "footY": 338
   }
  },
  "asa": {
