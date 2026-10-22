@@ -13,19 +13,20 @@ Abra `index.html` no navegador. Não precisa de build nem dependências.
 
 ## Ciclo de vida
 
-Botão de flor → abre em ~2 min → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h.
+Botão de flor → abre em 30 s → fadinha bebê → fada adulta com 24 h. Dorme das 22h às 7h.
 
 ## Arquitetura (`index.html`)
 
 1. **Sprites**: pixel art monocromática (LCD) e itens coloridos.
 2. **Core**: estado e regras da simulação (`Core.stepMinute`, `needs`, `mood`). Não sabe nada de tela.
-3. **Renderers**: `LcdRenderer` (48×32) e `ColorRenderer` (128×80, fada desenhada proceduralmente). Interface comum `init(canvas)` + `draw(state, ui, now)`. Um futuro renderer realista entra aqui sem mexer no Core.
+3. **Renderers**: `LcdRenderer` (48×32) e `ColorRenderer` (192×120, fada desenhada proceduralmente com sombreamento). Interface comum `init(canvas)` + `draw(state, ui, now)`. Um futuro renderer realista entra aqui sem mexer no Core.
 4. **UI**: botões, ficha da fada, persistência.
 
 ## Roadmap
 
 - [x] v0.1: versão LCD clássica
 - [x] v0.2: visual colorido, faixa com o nome da seção, tela maior
+- [x] v0.3: visual HD (192×120), sombreamento, cenário animado, nascimento em 30 s
 - [ ] Mais personalidade (animações de tédio, fome etc.)
 - [ ] Personalização da fada ao nascer
 - [ ] Gráficos realistas
