@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fadagotchi</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +32,7 @@
   --f-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 html, body { height: 100%; }
+body { margin: 0; }
 [hidden] { display: none !important; }
 body {
   background: radial-gradient(ellipse at 30% 0%, #3a2b4a 0%, var(--dusk) 55%) fixed, var(--dusk);
@@ -191,6 +197,8 @@ label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(-
 .gone p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .alert.on { animation: none; opacity: 1; } .fill { transition: none; } }
 </style>
+</head>
+<body>
 
 <main class="wrap">
   <section class="stage" aria-label="Brinquedo">
@@ -1455,3 +1463,5 @@ function start(snap) {
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
+</body>
+</html>

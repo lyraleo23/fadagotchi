@@ -29,3 +29,8 @@ Botão de flor → abre em ~2 min → fadinha bebê → fada adulta com 24 h. Do
 - [ ] Mais personalidade (animações de tédio, fome etc.)
 - [ ] Personalização da fada ao nascer
 - [ ] Gráficos realistas
+
+## Publicação
+
+- **GitHub Pages:** https://lyraleo23.github.io/fadagotchi/ (Settings → Pages → Deploy from a branch → `main` / root).
+- **Artifact no Claude:** o artifact recebe só o conteúdo de dentro do `<body>` mais `<title>`/`<style>` (o Claude adiciona o esqueleto HTML na publicação).
