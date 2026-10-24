@@ -1,13 +1,14 @@
 /* Service worker do Fadagotchi: guarda o app para funcionar offline.
    Ao publicar uma versão nova, suba VERSION (igual a js/version.js). */
-const VERSION = '1.7.1';
+const VERSION = '1.8.0';
 const CACHE = 'fadagotchi-' + VERSION;
 const FONTS = 'fadagotchi-fonts';
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/version.js', 'js/sprites.js', 'js/core.js', 'js/looks.js', 'js/accessories.js', 'js/world.js',
   'js/behavior.js', 'js/faces.js', 'js/renderers/lcd.js', 'js/renderers/pixel.js', 'js/renderers/smooth.js', 'js/renderers/illustrated.js', 'js/renderers/painted.js',
-  'assets/fada/fada.json', 'assets/fada/referencia.webp', 'assets/fada/acenando.webp', 'assets/fada/espreguicando.webp', 'assets/fada/fome.webp', 'assets/fada/bocejo.webp', 'assets/fada/cochilo.webp', 'assets/fada/tedio.webp', 'assets/fada/lado.webp', 'assets/fada/asa.webp', 'assets/fada/referencia_feliz.webp', 'assets/fada/referencia_triste.webp', 'assets/fada/referencia_dormindo.webp', 'assets/fada/referencia_cansada.webp', 'assets/fada/referencia_entediada.webp',
+  'assets/fada/fada.json', 'assets/fada/referencia.webp', 'assets/fada/acenando.webp', 'assets/fada/espreguicando.webp', 'assets/fada/fome.webp', 'assets/fada/bocejo.webp', 'assets/fada/cochilo.webp', 'assets/fada/tedio.webp', 'assets/fada/lado.webp', 'assets/fada/asa.webp',
+  'assets/fada/referencia.mask.png', 'assets/fada/acenando.mask.png', 'assets/fada/espreguicando.mask.png', 'assets/fada/fome.mask.png', 'assets/fada/bocejo.mask.png', 'assets/fada/cochilo.mask.png', 'assets/fada/tedio.mask.png', 'assets/fada/lado.mask.png', 'assets/fada/referencia_feliz.mask.png', 'assets/fada/referencia_triste.mask.png', 'assets/fada/referencia_dormindo.mask.png', 'assets/fada/referencia_cansada.mask.png', 'assets/fada/referencia_entediada.mask.png', 'assets/fada/bebe_referencia.mask.png', 'assets/fada/bebe_acenando.mask.png', 'assets/fada/bebe_espreguicando.mask.png', 'assets/fada/bebe_fome.mask.png', 'assets/fada/bebe_bocejo.mask.png', 'assets/fada/bebe_cochilo.mask.png', 'assets/fada/bebe_tedio.mask.png', 'assets/fada/bebe_lado.mask.png', 'assets/fada/bebe_referencia_feliz.mask.png', 'assets/fada/bebe_referencia_triste.mask.png', 'assets/fada/bebe_referencia_dormindo.mask.png', 'assets/fada/bebe_referencia_cansada.mask.png', 'assets/fada/bebe_referencia_entediada.mask.png', 'assets/fada/referencia_feliz.webp', 'assets/fada/referencia_triste.webp', 'assets/fada/referencia_dormindo.webp', 'assets/fada/referencia_cansada.webp', 'assets/fada/referencia_entediada.webp',
   'assets/fada/bebe_referencia.webp', 'assets/fada/bebe_acenando.webp', 'assets/fada/bebe_espreguicando.webp', 'assets/fada/bebe_fome.webp', 'assets/fada/bebe_bocejo.webp', 'assets/fada/bebe_cochilo.webp', 'assets/fada/bebe_tedio.webp', 'assets/fada/bebe_lado.webp',
   'assets/fada/bebe_referencia_feliz.webp', 'assets/fada/bebe_referencia_triste.webp', 'assets/fada/bebe_referencia_dormindo.webp', 'assets/fada/bebe_referencia_cansada.webp', 'assets/fada/bebe_referencia_entediada.webp',
   'js/backup.js', 'js/app.js', 'js/ui.js',

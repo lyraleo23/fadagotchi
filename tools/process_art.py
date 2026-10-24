@@ -10,9 +10,13 @@ Lê a referência e as poses de cada fase e gera assets/fada/<pose>.webp
 - limpa o halo quase invisível (alfa < 24 vira 0) e firma o miolo (alfa >= 240 vira 255)
 - normaliza a escala: a fada em pé (pés → topo do cabelo) fica com ALTURA px
 - recorta na área visível e registra onde ficam os pés
+- gera <pose>.mask.png com as regiões (cabelo, pele, olhos, vestido, sapatos) para recolorir no jogo
+  (precisa de numpy e scipy)
 """
 import json, pathlib
+import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageChops, ImageStat
+from scipy import ndimage as ndi
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'assets' / 'fada'
@@ -39,6 +43,51 @@ ROSTOS = ['feliz', 'triste', 'dormindo', 'cansada', 'entediada']
 
 def src(fase, n):
     return ROOT / (fase['ref'] if n == 'referencia' else f"art/recebidas/{fase['arq']}_pose_{n}.png")
+
+
+# ---- máscara de regiões (para recolorir cabelo, pele, olhos, vestido e sapatos no jogo) ----
+# valores no PNG: 0 nada (ouro, flores, boca...) · 1 cabelo · 2 pele · 3 olhos · 4 vestido · 5 sapatos
+NONE, HAIR,SKIN,EYES,DRESS,SHOE=0,1,2,3,4,5
+def hsv(im):
+    r,g,b=im[...,0],im[...,1],im[...,2]
+    mx=im[...,:3].max(-1); mn=im[...,:3].min(-1); d=mx-mn+1e-6
+    h=np.where(mx==r,((g-b)/d)%6,np.where(mx==g,(b-r)/d+2,(r-g)/d+4))*60
+    return h, d/(mx+1e-6), mx
+def fill(cls, a, k, size=7, frac=0.5):
+    """pixels sem classe cercados pela classe k viram k (fios claros/escuros, bordas das folhas)"""
+    m=(cls==k).astype(float)
+    f=ndi.uniform_filter(m,size)
+    cls[(cls==NONE)&a&(f>=frac)]=k
+def classify(img):
+    im=np.asarray(img.convert('RGBA')).astype(float)/255
+    a=im[...,3]>0.1; h,s,v=hsv(im); H,W=a.shape
+    cls=np.zeros((H,W),np.uint8)
+    pinkish=(h>=330)|(h<8)
+    pink=a&pinkish&(s>0.16)&(v>0.3)
+    skin=(a&(h>=8)&(h<45)&(s>0.06)&(s<0.7)&(v>0.4)) | (a&pinkish&(s<=0.16)&(v>0.6))
+    green=a&(h>=48)&(h<170)&(s>0.18)
+    purple=a&(h>=235)&(h<330)&(s>0.15)
+    # o que fica dentro da pele (boca, bochechas, olhos) não é cabelo
+    inner=ndi.binary_fill_holes(ndi.binary_closing(skin,iterations=2))&~skin
+    blush=inner&pinkish&(s<0.5)
+    pink=pink&~inner
+    # rosa grande: junta os fios, separa cabelo (encosta no alto) de sapatos (embaixo); manchas pequenas (boca) ficam de fora
+    joined=ndi.binary_closing(pink,iterations=3)
+    lab,nl=ndi.label(joined)
+    hair=np.zeros_like(pink); shoe=np.zeros_like(pink)
+    for i,sl in enumerate(ndi.find_objects(lab),1):
+        comp=(lab==i)&pink
+        if comp.sum()<a.sum()*0.003: continue
+        if sl[0].start>H*0.55: shoe|=comp
+        else: hair|=comp
+    cls[(skin|blush)&~hair&~shoe]=SKIN; cls[green]=DRESS; cls[hair]=HAIR; cls[shoe]=SHOE
+    lab,nl=ndi.label(purple); sizes=ndi.sum(purple,lab,range(1,nl+1))
+    cls[np.isin(lab,1+np.where(sizes<a.sum()*0.01)[0])&purple]=EYES
+    # mechas claras no meio do cabelo (pele cercada de cabelo) viram cabelo
+    hf=ndi.uniform_filter((cls==HAIR).astype(float),15)
+    cls[(cls==SKIN)&(hf>0.6)&((h<25)|(h>=330))]=HAIR
+    fill(cls,a,HAIR,7,0.45); fill(cls,a,HAIR,9,0.45); fill(cls,a,HAIR,9,0.45); fill(cls,a,DRESS,5,0.5); fill(cls,a,SHOE,5,0.5)
+    return cls
 
 
 def affine_from(src, dst):
@@ -122,6 +171,7 @@ def processa(fase, meta):
         xs = [x for x in range(im.width) if px[x, max(0, fy - 2)][3] > 200]
         fx = sum(xs) / len(xs) if xs else im.width / 2
         im.save(OUT / f'{P}{n}.webp', 'WEBP', quality=88, method=6)
+        Image.fromarray(classify(im)).save(OUT / f'{P}{n}.mask.png', optimize=True)
         meta['poses'][P + n] = {'w': im.width, 'h': im.height, 'footX': round(fx, 1), 'footY': im.height}
         print(f'{P + n:22s} {im.width}x{im.height}  pés x={fx:.0f}  {(OUT / f"{P}{n}.webp").stat().st_size // 1024} KB')
 
