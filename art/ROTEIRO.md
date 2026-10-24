@@ -2,6 +2,30 @@
 
 Referência oficial: `art/referencia/fada-adulta.png`.
 
+## Rodada 3 · Acessórios
+
+1. **laço de fita** → `acessorio_laco.png`
+
+   Um laço de fita de cetim rosa-claro com duas pontas caindo, laçada bem armada e brilho suave do cetim, visto de frente, reto (sem inclinar). É o laço que a fada usa preso no alto da cabeça. Mesmo estilo de pintura digital semi-realista da fada da imagem anexada, mesma iluminação suave vinda de cima à esquerda, cores delicadas que combinem com ela. SÓ o objeto, SEM a fada e SEM cabeça, corpo ou manequim. Objeto centralizado, ocupando a maior parte da imagem, com pequena margem em volta. Fundo transparente de verdade (PNG, sem xadrez desenhado). Anexe a referência da fada adulta. Formato quadrado 1024×1024.
+
+2. **colar de orvalho** → `acessorio_colar.png`
+
+   Um colar delicado de gotas de orvalho: um fio fininho prateado com pequenas gotas de cristal transparente e brilhante, e uma gota maior pendurada no centro. Visto de frente e já no formato de quem está usando: o fio faz uma curva em U, como se estivesse em volta de um pescoço invisível, e as duas pontas de cima ficam abertas. Mesmo estilo de pintura digital semi-realista da fada da imagem anexada, mesma iluminação suave vinda de cima à esquerda, cores delicadas que combinem com ela. SÓ o objeto, SEM a fada e SEM cabeça, corpo ou manequim. Objeto centralizado, ocupando a maior parte da imagem, com pequena margem em volta. Fundo transparente de verdade (PNG, sem xadrez desenhado). Anexe a referência da fada adulta. Formato paisagem 1536×1024.
+
+3. **coroa de flores** → `acessorio_coroa.png`
+
+   Uma coroa de flores pequenas e folhinhas: margaridas brancas, florzinhas rosa e lilás e folhas verdes trançadas num aro fino. Vista de frente e um pouco de cima, no formato de quem está usando: um aro oval achatado, com a parte da frente mais baixa e as flores de trás aparecendo por cima. Mesmo estilo de pintura digital semi-realista da fada da imagem anexada, mesma iluminação suave vinda de cima à esquerda, cores delicadas que combinem com ela. SÓ o objeto, SEM a fada e SEM cabeça, corpo ou manequim. Objeto centralizado, ocupando a maior parte da imagem, com pequena margem em volta. Fundo transparente de verdade (PNG, sem xadrez desenhado). Anexe a referência da fada adulta. Formato paisagem 1536×1024.
+
+4. **capa de pétalas** → `acessorio_capa.png`
+
+   Uma capa longa feita de pétalas de rosa sobrepostas em tons de rosa e lilás, como escamas macias, com uma golinha pequena no alto e a barra ondulada formada pelas pontas das pétalas. Vista de frente, aberta e esticada como se estivesse pendurada: estreita em cima (largura de ombros) e abrindo em leque até embaixo. Sem fecho, sem pessoa dentro. Mesmo estilo de pintura digital semi-realista da fada da imagem anexada, mesma iluminação suave vinda de cima à esquerda, cores delicadas que combinem com ela. SÓ o objeto, SEM a fada e SEM cabeça, corpo ou manequim. Objeto centralizado, ocupando a maior parte da imagem, com pequena margem em volta. Fundo transparente de verdade (PNG, sem xadrez desenhado). Anexe a referência da fada adulta. Formato retrato 1024×1536.
+
+5. **tiara de estrela** → `acessorio_tiara.png`
+
+   Uma tiara delicada de ouro claro com uma estrela de cristal brilhante no centro e pequenas pedrinhas cintilantes dos dois lados. Vista de frente e um pouco de cima, no formato de quem está usando: um arco fino em curva, com a estrela de pé no meio. Mesmo estilo de pintura digital semi-realista da fada da imagem anexada, mesma iluminação suave vinda de cima à esquerda, cores delicadas que combinem com ela. SÓ o objeto, SEM a fada e SEM cabeça, corpo ou manequim. Objeto centralizado, ocupando a maior parte da imagem, com pequena margem em volta. Fundo transparente de verdade (PNG, sem xadrez desenhado). Anexe a referência da fada adulta. Formato paisagem 1536×1024.
+
+As asas cintilantes são um efeito do jogo, sem imagem.
+
 ## Como gerar
 
 1. No ChatGPT, use **sempre a mesma conversa** e anexe a referência em cada pedido.
