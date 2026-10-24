@@ -57,14 +57,15 @@ const Core = {
       s.fun = cl(s.fun - 2 * h);
       s.affection = cl(s.affection - (s.lightsOff ? 2 : 6) * h);
       s.hygiene = cl(s.hygiene - (2 + 8 * p) * h);
-      s.energy = cl(s.energy + (s.lightsOff ? 22 : 10) * h);
+      // de dia é um cochilo: recupera rápido pra ela não passar o dia dormindo
+      s.energy = cl(s.energy + (night ? (s.lightsOff ? 22 : 10) : (s.lightsOff ? 45 : 30)) * h);
       s.bladder = cl(s.bladder + 6 * h);
     } else {
       s.hunger = cl(s.hunger - 10 * k * h);
       s.fun = cl(s.fun - 9 * k * h);
       s.affection = cl(s.affection - 7 * k * h);
       s.hygiene = cl(s.hygiene - (5 + 8 * p) * h);
-      s.energy = cl(s.energy - 7 * k * h);
+      s.energy = cl(s.energy - 3.5 * k * h);
       s.bladder = cl(s.bladder + 20 * k * h);
     }
 

@@ -150,7 +150,7 @@ function rpsTick(now) {
   if (!g || g.phase !== 'show' || now - g.t0 < 1600) return;
   if (g.you >= 2 || g.fairy >= 2 || g.rounds >= 9) {
     const youWon = g.you > g.fairy, n = s.name;
-    s.fun = cl(s.fun + 18 + g.you * 6 + g.fairy * 4); s.energy = cl(s.energy - 5); s.hunger = cl(s.hunger - 3);
+    s.fun = cl(s.fun + 18 + g.you * 6 + g.fairy * 4); s.energy = cl(s.energy - 10); s.hunger = cl(s.hunger - 3);
     ui.view = 'main'; ui.game = null;
     anim('win', 2500); setTimeout(() => Behavior.play(youWon ? 'giggle' : 'spin'), 2500);
     say(youWon ? `Você ganhou de ${g.you} a ${g.fairy}! ${n} quer revanche.` : g.you === g.fairy ? `Empatou! ${n} adorou brincar.` : `${n} ganhou de ${g.fairy} a ${g.you} e ficou toda orgulhosa!`);
@@ -175,7 +175,7 @@ function gameTick(now) {
   if (!g || g.phase !== 'show' || now - g.t0 < 1300) return;
   if (g.results.length >= 5) {
     const wins = g.results.filter(Boolean).length;
-    s.fun = cl(s.fun + 10 + wins * 8); s.energy = cl(s.energy - 6); s.hunger = cl(s.hunger - 4);
+    s.fun = cl(s.fun + 10 + wins * 8); s.energy = cl(s.energy - 12); s.hunger = cl(s.hunger - 4);
     ui.view = 'main'; ui.game = null;
     anim(wins >= 3 ? 'win' : 'lose', 2500);
     if (wins >= 3) setTimeout(() => Behavior.play('spin'), 2500);
