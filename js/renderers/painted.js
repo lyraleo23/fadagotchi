@@ -35,7 +35,8 @@ const PaintedRenderer = (() => {
           const c = document.createElement('canvas'); c.width = mk.naturalWidth; c.height = mk.naturalHeight;
           const g = c.getContext('2d'); g.drawImage(mk, 0, 0);
           const d = g.getImageData(0, 0, c.width, c.height).data, m = new Uint8Array(c.width * c.height);
-          for (let i = 0; i < m.length; i++) m[i] = d[i * 4];
+          // classe × 50 no PNG; arredonda (o navegador pode mexer alguns pontos na cor)
+          for (let i = 0; i < m.length; i++) m[i] = Math.min(5, Math.round(d[i * 4] / 50));
           masks[n] = m;
         };
         if (!inline || inline.masks) mk.src = inline ? inline.masks[n] : `assets/fada/${n}.mask.png`;
@@ -80,7 +81,11 @@ const PaintedRenderer = (() => {
       return [lo, Math.max(lo + 1, hi)];
     }));
   }
+  // se recolorir falhar por qualquer motivo, a fada aparece com as cores originais (nunca some)
   function pic(n) {
+    try { return recolor(n); } catch (e) { masks[n] = null; return imgs[n]; }
+  }
+  function recolor(n) {
     const im = imgs[n], m = masks[n];
     if (!im || !m) return im;
     const key = lkey(look);
@@ -104,6 +109,9 @@ const PaintedRenderer = (() => {
   }
   // asas: o desenho inteiro vira o degradê das asas escolhidas
   function wingsPic() {
+    try { return wingsRecolor(); } catch (e) { return wingImg; }
+  }
+  function wingsRecolor() {
     if (!wingImg || look.wings === DEFAULT_LOOK.wings) return wingImg;
     if (wingPic && wingKey === look.wings) return wingPic;
     const W = LOOKS.wings[look.wings], lut = ramp([[0, hexRGB(W.rim)], [0.45, hexRGB(W.a)], [0.75, hexRGB(W.b)], [1, hexRGB(W.root)]]);
@@ -172,6 +180,10 @@ const PaintedRenderer = (() => {
   }
 
   function fairy(g, stage, cx, F, face, t, blink, pose) {
+    try { return paintedFairy(g, stage, cx, F, face, t, blink, pose); }
+    catch (e) { return null; }       // qualquer erro: usa a fada do Ilustrado
+  }
+  function paintedFairy(g, stage, cx, F, face, t, blink, pose) {
     if (!meta || (stage !== 'adult' && stage !== 'baby')) return null;
     const P = stage === 'baby' ? 'bebe_' : '';
     let name = P + choose(pose, face, blink);

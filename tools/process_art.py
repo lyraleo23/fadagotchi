@@ -46,7 +46,9 @@ def src(fase, n):
 
 
 # ---- máscara de regiões (para recolorir cabelo, pele, olhos, vestido e sapatos no jogo) ----
-# valores no PNG: 0 nada (ouro, flores, boca...) · 1 cabelo · 2 pele · 3 olhos · 4 vestido · 5 sapatos
+# classes: 0 nada (ouro, flores, boca...) · 1 cabelo · 2 pele · 3 olhos · 4 vestido · 5 sapatos
+# no PNG cada classe vira um cinza bem espaçado (classe × 50): navegadores que ajustam a cor ao
+# desenhar (Safari) mudam o valor em poucos pontos, e o jogo arredonda de volta
 NONE, HAIR,SKIN,EYES,DRESS,SHOE=0,1,2,3,4,5
 def hsv(im):
     r,g,b=im[...,0],im[...,1],im[...,2]
@@ -171,7 +173,7 @@ def processa(fase, meta):
         xs = [x for x in range(im.width) if px[x, max(0, fy - 2)][3] > 200]
         fx = sum(xs) / len(xs) if xs else im.width / 2
         im.save(OUT / f'{P}{n}.webp', 'WEBP', quality=88, method=6)
-        Image.fromarray(classify(im)).save(OUT / f'{P}{n}.mask.png', optimize=True)
+        Image.fromarray(classify(im) * 50).save(OUT / f'{P}{n}.mask.png', optimize=True)
         meta['poses'][P + n] = {'w': im.width, 'h': im.height, 'footX': round(fx, 1), 'footY': im.height}
         print(f'{P + n:22s} {im.width}x{im.height}  pés x={fx:.0f}  {(OUT / f"{P}{n}.webp").stat().st_size // 1024} KB')
 
