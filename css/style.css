@@ -258,7 +258,9 @@ kbd { font-family: var(--f-display); font-size: 11px; border: 1px solid var(--li
 .fill.crit { background: var(--crit); }
 .val { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; text-align: right; }
 
-.look-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.look-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.look-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.look-btns .ghost:disabled { opacity: .45; cursor: default; }
 .looks { display: grid; gap: 10px; }
 .accs { display: flex; flex-wrap: wrap; gap: 8px; }
 .acc {

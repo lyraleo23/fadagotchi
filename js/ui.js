@@ -290,11 +290,13 @@ function buildLooks() {
       </div></div>`).join('');
   $('looks').querySelectorAll('.sw').forEach(b => b.onclick = () => setLook({ ...lookOf(s), [b.dataset.part]: b.dataset.k }));
   $('lookRandom').onclick = () => setLook(randomLook());
+  $('lookDefault').onclick = () => setLook({ ...DEFAULT_LOOK }, true);
   renderLooks();
 }
-function setLook(l) {
+function setLook(l, original = false) {
   s.look = l; save(); renderLooks();
-  if (Behavior.state.routine && Behavior.state.routine.phase === 'inside') say(`${s.name} está dormindo na casinha. A roupa nova aparece quando ela sair.`);
+  if (original && s.stage !== 'bud') say(`${s.name} voltou às cores originais.`);
+  else if (Behavior.state.routine && Behavior.state.routine.phase === 'inside') say(`${s.name} está dormindo na casinha. A roupa nova aparece quando ela sair.`);
   else if (s.stage === 'bud') say('O botão de flor já mudou de cor. O resto aparece quando ela nascer.');
   else say(`${s.name} adorou o visual novo!`);
   render();
@@ -303,6 +305,7 @@ function renderLooks() {
   const l = lookOf(s);
   $('looks').querySelectorAll('.sw').forEach(b => { const on = l[b.dataset.part] === b.dataset.k; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
   for (const [part] of LOOK_PARTS) $('ln-' + part).textContent = LOOKS[part][l[part]].label;
+  $('lookDefault').disabled = LOOK_PARTS.every(([part]) => l[part] === DEFAULT_LOOK[part]);
 }
 
 const fmtH = h => h >= 10 ? `${Math.floor(h)} h` : h >= 1 ? `${h.toFixed(1).replace('.', ',')} h` : `${Math.round(h * 60)} min`;
